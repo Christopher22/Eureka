@@ -73,11 +73,11 @@ public class Enemy {
   }
 
   public Contact firstContact() {
-    return this.events.peekFirst();
+    return this.events.peekLast();
   }
 
   public Contact lastContact() {
-    return this.events.peekLast();
+    return this.events.peekFirst();
   }
 
   public double getDanger() {
@@ -88,13 +88,13 @@ public class Enemy {
     return this.name;
   }
 
-  public Point2D.Double predictPosition(long turn) {
+  public Point2D.Double predictPosition(double turn) {
     Contact last = this.lastContact();
     return new Point2D.Double(
-      last.getAbsolutPosition().getX() + Math.sin(Math.toRadians(last.getHeading())) * last.getVelocity() * turn,
-      last.getAbsolutPosition().getY() + Math.cos(Math.toRadians(last.getHeading())) * last.getVelocity() * turn
+      last.getVelocity() * turn * Math.sin(Math.toRadians(last.getHeading())),
+      last.getVelocity() * turn * Math.cos(Math.toRadians(last.getHeading()))
     );
-    
+
     /*final int PREDICTION_TURNS = 3;
 
     double[] xPos = new double[PREDICTION_TURNS], yPos = new double[PREDICTION_TURNS], timeline = new double[PREDICTION_TURNS];
