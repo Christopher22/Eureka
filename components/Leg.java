@@ -1,89 +1,185 @@
 package skynet.components;
 
 import robocode.util.Utils;
-import robocode.*;
 
 import java.awt.geom.Point2D;
-import java.util.Random;
-import java.util.LinkedList;
+import java.util.Arrays;
 import java.util.Observable;
+import java.util.Collections;
 
 import skynet.Skynet;
-import skynet.helper.Enemy;
+import skynet.helper.*;
 
+/**
+ * The leg - used to control movement.
+ */
 public class Leg extends Component {
 
-  final static int MIN_FLIGHT_DISTANCE = 150;
-  final static int MAX_FLIGHT_DISTANCE = 300;
+  /**
+   * The definition of a suitable distance towards a border.
+   */
+  final static double BORDER_DEFINITION = 1.5;
 
-  final static int MIN_WAYPOINT_VARIANCE = 40;
-  final static int MAX_WAYPOINT_VARIANCE = 120;
+  /**
+   * The minimal distance of a new point.
+   */
+  final static int MINIMAL_MOVEMENT = 100;
 
-  final static int ENEMY_GRAVITY_POWER = 2000;
-  final static int ENEMY_DISTANCE_MANIPULATOR = 2;
+  /**
+   * The maximal distance torwards a new point.
+   */
+  final static int MAXIMAL_MOVEMENT = 300;
 
-  final static int WALL_GRAVITY_POWER = 5000;
-  final static int WALL_DISTANCE_MANIPULATOR = 0;
+  /**
+   * The number of flightpoints which are to be evaluated.
+   */
+  final static int FLIGHT_POINTS = 40;
 
-  final static int BORDER_DEFINITION = 4;
+  /**
+   * An event which is fired if a current movement is complete.
+   */
+  public static class MovementDone implements Event {}
 
-  public static class MovementDone {}
+  /**
+   * A potential position which is evaluated in terms of safety.
+   */
+  public static class FlyPoint implements Comparable<FlyPoint> {
+
+    private Point2D.Double m_point;
+    private double m_danger, m_radians;
+
+    /**
+     * Creates a new flypoint.
+     */
+    public FlyPoint(Skynet skynet, double radians, int distance) {
+      this.m_point = new Point2D.Double(skynet.getX() + distance * Math.cos(radians),
+          skynet.getY() + distance * Math.sin(radians));
+
+      this.m_radians = radians;
+      this.m_danger = this.calculateDanger(skynet);
+    }
+
+    /**
+     * Returns the position of the point.
+     * @return the position.
+     */
+    public Point2D.Double getPoint() {
+      return this.m_point;
+    }
+
+    /**
+     * Returns the safety of this point.
+     * @return the safety of the point.
+     */
+    public double getDanger() {
+      return this.m_danger;
+    }
+
+    /**
+     * Returns the radians of player torwards this point.
+     * @return the direction.
+     */
+    public double getRadians() {
+      return this.m_radians;
+    }
+
+    /**
+     * Compares a flypoint to another in terms of danger.
+     */
+    public int compareTo(FlyPoint o) {
+      return (int) (this.m_danger - o.m_danger);
+    }
+
+    /**
+     * Calculates the safety of a position.
+     */
+    private double calculateDanger(Skynet skynet) {
+      if (this.m_point.getX() < skynet.getWidth() * BORDER_DEFINITION
+          || this.m_point.getX() > skynet.getBattleFieldWidth() - skynet.getWidth() * BORDER_DEFINITION
+          || this.m_point.getY() < skynet.getHeight() * BORDER_DEFINITION
+          || this.m_point.getY() > skynet.getBattleFieldHeight() - skynet.getHeight() * BORDER_DEFINITION) {
+        return Double.POSITIVE_INFINITY;
+      }
+
+      final Point2D.Double ownPos = skynet.getPosition();
+      double result = 0;
+
+      for (Enemy e : skynet.getEye().getCurrentEnemies()) {
+        Point2D.Double enemyPos = e.lastContact().getAbsolutPosition();
+        result += e.getDanger()
+            * (1 + Math.abs(Math.cos(calcAngle(ownPos, this.m_point) - calcAngle(enemyPos, this.m_point))))
+            / m_point.distance(enemyPos);
+      }
+
+      return result;
+    }
+
+    /**
+     * Calculates the angle between two points.
+     * @return the angle between two points.
+     */
+    private static double calcAngle(Point2D.Double p2, Point2D.Double p1) {
+      return Math.atan2(p2.x - p1.x, p2.y - p1.y);
+    }
+  }
 
   private boolean m_isMoving;
-  private Random randomGenerator;
-  private LinkedList<Point2D.Double> m_waypoints;
+  public FlyPoint[] m_flyPoints;
 
+  /**
+   * Creates a new leg.
+   */
   public Leg(Skynet skynet) {
     super(skynet);
+
     this.m_isMoving = false;
-    this.randomGenerator = new Random();
-    this.m_waypoints = new LinkedList<>();
+    this.m_flyPoints = new FlyPoint[FLIGHT_POINTS];
   }
 
+  /**
+   * Flight to an optimal safe point in range.
+   */
   public void fly() {
-    Point2D.Double force = new Point2D.Double(0, 0);
-    for (Enemy e : this.skynet.getEye().getCurrentEnemies()) {
-      calculateForce(force, e.lastContact().getAbsolutPosition(), ENEMY_GRAVITY_POWER, ENEMY_DISTANCE_MANIPULATOR);
+    final double STEP = (2 * Math.PI) / FLIGHT_POINTS;
+    for (int i = 0; i < FLIGHT_POINTS; i++) {
+      int distance = Utils.getRandom().nextInt(MAXIMAL_MOVEMENT - MINIMAL_MOVEMENT) + MINIMAL_MOVEMENT;
+      this.m_flyPoints[i] = new FlyPoint(this.skynet, STEP / 2 + i * STEP, distance);
     }
 
-    calculateForce(force, new Point2D.Double(this.skynet.getX(), 0), WALL_GRAVITY_POWER, WALL_DISTANCE_MANIPULATOR);
-    calculateForce(force, new Point2D.Double(this.skynet.getX(), this.skynet.getBattleFieldHeight()), WALL_GRAVITY_POWER, WALL_DISTANCE_MANIPULATOR);
-    calculateForce(force, new Point2D.Double(0, this.skynet.getY()), WALL_GRAVITY_POWER, WALL_DISTANCE_MANIPULATOR);
-    calculateForce(force, new Point2D.Double(this.skynet.getBattleFieldWidth(), this.skynet.getY()), WALL_GRAVITY_POWER, WALL_DISTANCE_MANIPULATOR);
-
-    double x = this.skynet.getX(), y = this.skynet.getY();
-    if ((x < this.skynet.getWidth() * BORDER_DEFINITION || x > this.skynet.getBattleFieldWidth() - this.skynet.getWidth() * BORDER_DEFINITION)
-        && (y < this.skynet.getHeight() * BORDER_DEFINITION || y > this.skynet.getBattleFieldHeight() - this.skynet.getHeight() * BORDER_DEFINITION)) {
-      force.x = (force.x + this.randomGenerator.nextInt(3) + 2) * -1;
-      force.y = (force.y + this.randomGenerator.nextInt(3) + 2) * -1;
-    }
-
-    int distance = this.randomGenerator.nextInt(MAX_FLIGHT_DISTANCE - MIN_FLIGHT_DISTANCE) + MIN_FLIGHT_DISTANCE;
-    x = this.skynet.getX() - distance * (force.getX() + 1);
-    y = this.skynet.getY() - distance * (force.getY() + 1);
-
-    unpredictableMove(new Point2D.Double(x, y));
+    this.move(Collections.min(Arrays.asList(this.m_flyPoints)).getPoint());
   }
 
+  /**
+   * Checks if the player is currently moving.
+   * @return if the player is moving.
+   */
   public boolean isMoving() {
     return this.m_isMoving;
   }
 
+  /**
+   * Aborts the current movement.
+   */
   public void stop() {
     this.skynet.stop();
-    this.m_waypoints.clear();
+    this.m_isMoving = false;
   }
 
-  @Override public void update(Observable o, Object arg) {
-    if (arg instanceof MoveCompleteCondition) {
-      if (!m_waypoints.isEmpty()) {
-        this.move(m_waypoints.poll());
-      } else {
-        this.setChanged();
-        this.notifyObservers(new MovementDone());
-      }
+  /**
+   * Handles incoming events.
+   */
+  @Override
+  public void update(Observable o, Object arg) {
+    if (arg instanceof robocode.MoveCompleteCondition) {
+      this.m_isMoving = false;
+      this.setChanged();
+      this.notifyObservers(new MovementDone());
     }
   }
+
+  /**
+   * Moves to a specific point.
+   */
   public void move(Point2D.Double target) {
     // Check that the robot does not drive against the wall
     double x = Math.min(Math.max(skynet.getWidth(), target.getX()), skynet.getBattleFieldWidth() - skynet.getWidth());
@@ -96,53 +192,9 @@ public class Leg extends Component {
         Math.tan(a = Math.atan2(x -= (int) skynet.getX(), y -= (int) skynet.getY()) - skynet.getHeadingRadians()));
     skynet.setAhead(Math.hypot(x, y) * Math.cos(a));
 
-    this.skynet.addCustomEvent(new MoveCompleteCondition(this.skynet));
+    this.skynet.addCustomEvent(new robocode.MoveCompleteCondition(this.skynet));
 
     this.skynet.execute();
     this.m_isMoving = true;
-  }
-
-  public void unpredictableMove(Point2D.Double target) {
-    boolean direction = this.randomGenerator.nextBoolean();
-
-    for (double time = 0.1; time < 1.0 - (1.0 / 4); time += 1.0 / 4.0) {
-      // https://stackoverflow.com/questions/133897/how-do-you-find-a-point-at-a-given-perpendicular-distance-from-a-line
-      Point2D.Double waypoint = new Point2D.Double(
-        (1.0 - time) * (double)this.skynet.getX() + time * target.getX(),
-        (1.0 - time) * (double)this.skynet.getY() + time * target.getY()
-      );
-
-      double variance = (double) this.randomGenerator.nextInt(MAX_WAYPOINT_VARIANCE - MIN_WAYPOINT_VARIANCE) + MIN_WAYPOINT_VARIANCE;
-
-      double dx = waypoint.getX() - (double)this.skynet.getX();
-      double dy = waypoint.getY() - (double)this.skynet.getY();
-      double dist = Math.sqrt(dx * dx + dy * dy);
-      dx /= dist;
-      dy /= dist;
-
-      if (direction) {
-        waypoint.x += (variance / 2) * dy;
-        waypoint.y -= (variance / 2) * dx;
-      } else {
-        waypoint.x -= (variance / 2) * dy;
-        waypoint.y += (variance / 2) * dx;
-      }
-
-      this.m_waypoints.add(waypoint);
-      direction = !direction;
-    }
-
-    this.m_waypoints.add(target);
-    move(this.m_waypoints.poll());
-  }
-
-  private void calculateForce(Point2D.Double old_force, Point2D.Double position, double power, double distanceManipulator) {
-    double force = power / Math
-        .pow(Math.sqrt(Math.pow(position.getX() - this.skynet.getX(), 2) + Math.pow(position.getY() - this.skynet.getY(), 2)), distanceManipulator);
-    double ang = Utils
-        .normalRelativeAngleDegrees(Math.PI / 2 - Math.atan2(this.skynet.getY() - position.getY(), this.skynet.getX() - position.getX()));
-
-    old_force.x += Math.sin(ang) * force;
-    old_force.y += Math.cos(ang) * force;
   }
 }

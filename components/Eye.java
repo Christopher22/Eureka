@@ -5,67 +5,99 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Observable;
 
-import robocode.*;
 import robocode.util.Utils;
 
 import skynet.Skynet;
-import skynet.helper.Enemy;
+import skynet.helper.*;
 
 /**
- * MyClass - a class by (your name here)
+ * The eye - tracks mutiple enemies and scan the environment.
  */
 public class Eye extends Component {
 
-	public static class RobotFound extends robocode.Condition {
-		private ScannedRobotEvent m_robot;
+	/**
+	 * An event which is fired when a robot was found on the map.
+	 */
+	public static class RobotFound implements Event {
+		private robocode.ScannedRobotEvent m_robot;
 
-		public RobotFound(ScannedRobotEvent robot) {
-			super("RobotFound", 0);
+		/**
+		 * Constructs a new event from a 'ScannedRobotEvent'.
+		 */
+		public RobotFound(robocode.ScannedRobotEvent robot) {
 			this.m_robot = robot;
 		}
 
-		public ScannedRobotEvent getRobot() {
+		/** 
+		 * Returns the scanned robot.
+		 * @return The scanned robot.
+		*/
+		public robocode.ScannedRobotEvent getRobot() {
 			return this.m_robot;
 		}
-
-		@Override public boolean test() {
-			return true;
-		}
 	}
 
-	public static class RobotNearby {
+	/**
+	 * An event which is fired if a robot is nearby.
+	 */
+	public static class RobotNearby implements Event {
+
+		/**
+		 * The threshold in which a robot is classified as "nearby".
+		 */
 		public final static int THRESHOLD = 200;
 
-		private Enemy m_enemy;
-		
+		private Enemy m_robot;
+
+		/**
+		 * Constructs a new event.
+		 */
 		public RobotNearby(Enemy robot) {
-			this.m_enemy = robot;
+			this.m_robot = robot;
 		}
 
-		public Enemy getEnemy() {
-			return this.m_enemy;
+		/** 
+		 * Returns the robot nearby.
+		 * @return The nearby robot.
+		*/
+		public Enemy getRobot() {
+			return this.m_robot;
 		}
 	}
 
+	/**
+	 * An iterator over all the enemies with more or less up-to-date information.
+	 */
 	public class CurrentEnemyIterator implements Iterator<Enemy>, Iterable<Enemy> {
-		final long CURRENT = 15;
 
-		private Iterator<Enemy> enemies;
-		private Enemy nextEnemy;
-		private long current;
+		/**
+		 * The threshold, after which information are classified as outdated.
+		 */
+		final static long TURN_THRESHOLD = 8;
 
-		public CurrentEnemyIterator(Iterator<Enemy> enemies, long currentTurn) {
-			this.enemies = enemies;
+		private Iterator<Enemy> m_enemies;
+		private Enemy m_nextEnemy;
+		private long m_current;
+
+		/**
+		 * Creates the iterator.
+		 */
+		protected CurrentEnemyIterator(Iterator<Enemy> enemies, long currentTurn) {
+			this.m_enemies = enemies;
 		}
 
+		/**
+		 * Check for next element.
+		 * @return True, if there is still a new element.
+		 */
 		public boolean hasNext() {
-			if (this.nextEnemy != null) {
+			if (this.m_nextEnemy != null) {
 				return true;
 			} else {
-				while (this.nextEnemy == null && this.enemies.hasNext()) {
-					Enemy e = this.enemies.next();
-					if (e.lastContact().getTurn() >= this.current - CURRENT) {
-						this.nextEnemy = e;
+				while (this.m_nextEnemy == null && this.m_enemies.hasNext()) {
+					Enemy e = this.m_enemies.next();
+					if (e.lastContact().getTurn() >= this.m_current - TURN_THRESHOLD) {
+						this.m_nextEnemy = e;
 						return true;
 					}
 				}
@@ -73,62 +105,86 @@ public class Eye extends Component {
 			}
 		}
 
+		/**
+		 * Returns the next element.
+		 * @return Next up-to-date enemy.
+		 * @thows NoSuchElementException if no element is present.
+		 */
 		public Enemy next() {
-			if (this.nextEnemy != null || this.hasNext()) {
-				Enemy tmp = this.nextEnemy;
-				this.nextEnemy = null;
+			if (this.m_nextEnemy != null || this.hasNext()) {
+				Enemy tmp = this.m_nextEnemy;
+				this.m_nextEnemy = null;
 				return tmp;
 			} else {
 				throw new NoSuchElementException();
 			}
 		}
 
+		/**
+		 * Returns an iterator for an convinient usage in a foreach loop.
+		 */
 		public Iterator<Enemy> iterator() {
 			return this;
 		}
 	}
 
-	private HashMap<String, Enemy> enemies;
+	private HashMap<String, Enemy> m_enemies;
 
+	/**
+	 * Create the eye.
+	 */
 	public Eye(Skynet skynet) {
 		super(skynet);
 		this.skynet.setAdjustRadarForRobotTurn(true);
 
-		this.enemies = new HashMap<String, Enemy>();
+		this.m_enemies = new HashMap<String, Enemy>();
 	}
 
-	@Override public void update(Observable o, Object arg) {
+	/**
+	 * Handle incoming events.
+	 */
+	@Override
+	public void update(Observable o, Object arg) {
 		if (arg instanceof RobotFound) {
-			ScannedRobotEvent enemy = ((RobotFound)arg).getRobot();
-			Enemy e = this.enemies.get(enemy.getName());
+			robocode.ScannedRobotEvent enemy = ((RobotFound) arg).getRobot();
+
+			// Add enemy to queue, if not already happen.
+			Enemy e = this.m_enemies.get(enemy.getName());
 			if (e != null) {
 				e.addContact(this.skynet, enemy);
 			} else {
 				e = new Enemy(this.skynet, enemy);
-				this.enemies.put(enemy.getName(), e);
+				this.m_enemies.put(enemy.getName(), e);
 			}
 
-			if(e.lastContact().getDistance() < RobotNearby.THRESHOLD) {
+			if (e.lastContact().getDistance() < RobotNearby.THRESHOLD) {
 				this.setChanged();
 				this.notifyObservers(new RobotNearby(e));
 			}
 		}
 	}
 
+	/**
+	 * Returns an enemy by its name.
+	 * @return the Enemy or null elsewise.
+	 */
 	public Enemy getEnemy(String name) {
-		return this.enemies.get(name);
-	}
-	
-	public void focus(Enemy enemy) {
-
+		return this.m_enemies.get(name);
 	}
 
+	/**
+	 * Scans for other robots.
+	 */
 	public void scan() {
 		this.skynet.setTurnRadarLeft(Double.POSITIVE_INFINITY);
 		this.skynet.execute();
 	}
 
+	/**
+	 * Returns a iterator about current enemies.
+	 * @return The iterator over the enemies.
+	 */
 	public CurrentEnemyIterator getCurrentEnemies() {
-		return new CurrentEnemyIterator(this.enemies.values().iterator(), this.skynet.getTime());
+		return new CurrentEnemyIterator(this.m_enemies.values().iterator(), this.skynet.getTime());
 	}
 }

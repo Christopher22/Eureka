@@ -2,7 +2,11 @@ package skynet;
 
 import skynet.components.*;
 
+import java.awt.geom.Point2D;
 import java.util.Observable;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 import robocode.*;
 
@@ -23,6 +27,19 @@ public class Skynet extends AdvancedRobot {
 		this.fist = new Fist(this);
 		
 		m_brain.life();
+	}
+
+	public Point2D.Double getPosition() {
+		return new Point2D.Double(this.getX(), this.getY());
+	}
+	 
+	public void onPaint(Graphics2D g) {
+		g.setColor(java.awt.Color.RED);
+		for (Leg.FlyPoint flypoint : this.leg.m_flyPoints) {
+			if(flypoint != null) {
+				g.drawOval((int)flypoint.getPoint().getX() - 4, (int)flypoint.getPoint().getY() - 4, 4, 4);
+			}
+		}
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {

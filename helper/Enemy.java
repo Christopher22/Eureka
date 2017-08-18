@@ -80,6 +80,14 @@ public class Enemy {
     return this.events.peekLast();
   }
 
+  public double getDanger() {
+    return this.lastContact().getEnergy() / 50;
+  }
+
+  public String getName() {
+    return this.name;
+  }
+
   public Point2D.Double predictPosition(long turn) {
     Contact last = this.lastContact();
     return new Point2D.Double(

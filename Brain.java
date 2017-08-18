@@ -19,7 +19,7 @@ public class Brain extends Observable implements Observer {
 		this.m_skynet.getLeg().fly();
     }
 
-    public void sendProgress(robocode.Condition mission) {
+    public void sendProgress(Object mission) {
         this.update(this, mission);
         this.setChanged();
         this.notifyObservers(mission);
@@ -29,11 +29,12 @@ public class Brain extends Observable implements Observer {
         if((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired)) {
             this.m_skynet.getEye().scan();
             this.m_skynet.getLeg().fly();
-        } else if(arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
+        }
+        /*} else if(arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
             Enemy enemy = ((Eye.RobotNearby)arg).getEnemy();
 
             this.m_skynet.getLeg().stop();
             this.m_skynet.getFist().aim(enemy);
-        }
+        }*/
     }
 }
