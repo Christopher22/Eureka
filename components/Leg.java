@@ -6,6 +6,7 @@ import java.awt.geom.Point2D;
 import java.util.Arrays;
 import java.util.Observable;
 import java.util.Collections;
+import java.awt.Graphics2D;
 
 import skynet.Skynet;
 import skynet.helper.*;
@@ -124,7 +125,7 @@ public class Leg extends Component {
   }
 
   private boolean m_isMoving;
-  public FlyPoint[] m_flyPoints;
+  private FlyPoint[] m_flyPoints;
 
   /**
    * Creates a new leg.
@@ -175,6 +176,16 @@ public class Leg extends Component {
       this.setChanged();
       this.notifyObservers(new MovementDone());
     }
+  }
+
+  @Override
+  public void drawDebug(Graphics2D g) {
+    g.setColor(java.awt.Color.RED);
+		for (Leg.FlyPoint flypoint : this.m_flyPoints) {
+			if(flypoint != null) {
+				g.drawOval((int)flypoint.getPoint().getX() - 4, (int)flypoint.getPoint().getY() - 4, 4, 4);
+			}
+		}
   }
 
   /**

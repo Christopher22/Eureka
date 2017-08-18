@@ -34,12 +34,9 @@ public class Skynet extends AdvancedRobot {
 	}
 	 
 	public void onPaint(Graphics2D g) {
-		g.setColor(java.awt.Color.RED);
-		for (Leg.FlyPoint flypoint : this.leg.m_flyPoints) {
-			if(flypoint != null) {
-				g.drawOval((int)flypoint.getPoint().getX() - 4, (int)flypoint.getPoint().getY() - 4, 4, 4);
-			}
-		}
+		this.eye.drawDebug(g);
+		this.leg.drawDebug(g);
+		this.fist.drawDebug(g);
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {
