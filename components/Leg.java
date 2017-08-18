@@ -183,7 +183,7 @@ public class Leg extends Component {
     g.setColor(java.awt.Color.RED);
 		for (Leg.FlyPoint flypoint : this.m_flyPoints) {
 			if(flypoint != null) {
-				g.drawOval((int)flypoint.getPoint().getX() - 4, (int)flypoint.getPoint().getY() - 4, 4, 4);
+				g.fillOval((int)flypoint.getPoint().getX() - 8, (int)flypoint.getPoint().getY() - 8, 8, 8);
 			}
 		}
   }
