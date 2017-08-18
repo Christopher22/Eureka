@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Observable;
+import java.awt.Graphics2D;
 
 import robocode.util.Utils;
 
@@ -186,5 +187,13 @@ public class Eye extends Component {
 	 */
 	public CurrentEnemyIterator getCurrentEnemies() {
 		return new CurrentEnemyIterator(this.m_enemies.values().iterator(), this.skynet.getTime());
+	}
+
+	@Override
+	public void drawDebug(Graphics2D g) {
+		g.setColor(java.awt.Color.GREEN);
+		for (Enemy enemy :this.getCurrentEnemies()) {
+			g.fillOval((int) enemy.lastContact().getAbsolutPosition().getX() - 8, (int) enemy.lastContact().getAbsolutPosition().getY() - 8, 8, 8);
+		}
 	}
 }
