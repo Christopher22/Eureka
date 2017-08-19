@@ -46,7 +46,7 @@ public class Eye extends Component {
 		/**
 		 * The threshold in which a robot is classified as "nearby".
 		 */
-		public final static int THRESHOLD = 200;
+		public final static int THRESHOLD = 100;
 
 		private Enemy m_robot;
 
