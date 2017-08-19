@@ -108,7 +108,7 @@ public class Leg extends Component {
       for (Enemy e : skynet.getEye().getCurrentEnemies()) {
         Point2D.Double enemyPos = e.lastContact().getAbsolutPosition();
         result += e.getDanger()
-            * (1 + Math.abs(Math.cos(calcAngle(ownPos, this.m_point) - calcAngle(enemyPos, this.m_point))))
+            * (1 + Math.abs(Math.cos(HelperFunctions.bearing(ownPos, this.m_point) - HelperFunctions.bearing(enemyPos, this.m_point))))
             / m_point.distance(enemyPos);
       }
 

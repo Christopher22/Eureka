@@ -2,7 +2,7 @@ package skynet.components;
 
 import java.awt.geom.Point2D;
 import java.util.Observable;
-
+import java.awt.Graphics2D;
 import robocode.util.Utils;
 
 import skynet.helper.*;
@@ -16,27 +16,15 @@ public class Fist extends Component {
     /**
      * An event which is fired after a bulled was fired.
      */
-    public static class BulletFired implements Event {
-        private robocode.Bullet m_bullet;
+    public static class BulletFired implements Event {}
 
-        /**
-         * Creates a new bullet.
-         */
-        public BulletFired(robocode.Bullet bullet) {
-            this.m_bullet = bullet;
-        }
-
-        /**
-         * Returns the bullet object.
-         * @return The bullet.
-         */
-        public robocode.Bullet getBullet() {
-            return this.m_bullet;
-        }
-    }
-
+    final static double POWER_CONSTANT = 500;
+    final static long TICK_RANGE = 20;
+    final static int ITERATIONS = 15;
+    final static double ACCURACY = 0.01d;
     private Enemy m_currentTarget;
-    private double m_currentFirePower;
+    private double m_firePower;
+    private Point2D.Double m_DebuggingTarget;
 
     /**
      * Creates a new bullet.
@@ -51,26 +39,66 @@ public class Fist extends Component {
     /**
      * Aim an enemy.
      */
-    public void aim(Enemy target) {
+    public boolean aim(Enemy target) {
         m_currentTarget = target;
 
-        double distance = target.lastContact().getDistance();
-        this.m_currentFirePower = Math.min(500 / distance, 3);
-        long time = (long) (distance / (20 - this.m_currentFirePower * 3));
-        //Point2D.Double prediction = target.predictPosition(this.skynet.getTime() + time);
-        Point2D.Double prediction = target.predictPosition(time);
+        long ct = secant(time(target.lastContact().getDistance()), target);
+        Point2D.Double p = target.predictPosition(ct);
+        this.m_firePower = calculateFirePower(HelperFunctions.range(this.skynet.getPosition(), p));
+        double calculatedBearing = HelperFunctions.bearing(this.skynet.getPosition(), p) - this.skynet.getHeadingRadians();
+        double turnGun = Utils.normalRelativeAngle(this.skynet.getHeadingRadians() - this.skynet.getGunHeadingRadians() + calculatedBearing);
 
-        this.skynet.out.printf("Distance: %f\n", distance);
-        this.skynet.out.printf("Last contact: %f, %f\n", target.lastContact().getAbsolutPosition().x,
-                target.lastContact().getAbsolutPosition().y);
-        this.skynet.out.printf("Prediction: %f, %f\n", prediction.getX(), prediction.getY());
+        if (this.skynet.getGunHeat() != 0 || this.m_firePower < robocode.Rules.MIN_BULLET_POWER) {
+            m_currentTarget = null;
+            return false;
+        }
 
-        //Point2D.Double prediction = target.lastContact().getAbsolutPosition();
-        double absDeg = absoluteBearing(this.skynet.getX(), this.skynet.getY(), prediction.getX(), prediction.getY());
-
-        this.skynet.setTurnGunRight(Utils.normalRelativeAngleDegrees(absDeg - this.skynet.getGunHeading()));
+        this.skynet.setTurnGunRightRadians(turnGun);
         this.skynet.addCustomEvent(new robocode.GunTurnCompleteCondition(this.skynet));
         this.skynet.execute();
+        return true;
+    }
+
+    private long secant(long time, Enemy e) {
+        double t0 = time - (TICK_RANGE / 2);
+        double t1 = time + (TICK_RANGE / 2);
+        double X = t1;
+        double lastX = t0;
+        int iterationCount = 0;
+        double lastfX = f(Math.round(t0), e);
+        while ((Math.abs(X - lastX) >= ACCURACY) && (iterationCount < ITERATIONS)) {
+            iterationCount++;
+            double fX = f(Math.round(X), e);
+            if ((fX - lastfX) == 0.0)
+                break;
+            long nextX = (long) (X - fX * (X - lastX) / (fX - lastfX));
+            lastX = X;
+            X = nextX;
+            lastfX = fX;
+        }
+        return Math.round(X);
+    }
+
+    private static double calculateFirePower(double distance) {
+        return Math.min(POWER_CONSTANT / distance, robocode.Rules.MAX_BULLET_POWER);
+    }
+
+    private static double calculateBulletVelocity(double power) {
+        return 20 - robocode.Rules.MAX_BULLET_POWER * power;
+    }
+
+    private static long time(double distance) {
+        return (long) (distance / calculateBulletVelocity(calculateFirePower(distance)));
+    }
+
+    private double f(long time, Enemy e) {
+        Point2D.Double d = e.predictPosition(time);
+        double r = HelperFunctions.range(this.skynet.getPosition(), d);
+        return r - calculateBulletVelocity(calculateFirePower(r)) * time;
+    }
+
+    public double getHeading() {
+        return this.skynet.getGunHeading();
     }
 
     /**
@@ -86,36 +114,20 @@ public class Fist extends Component {
     @Override
     public void update(Observable o, Object arg) {
         if (arg instanceof robocode.GunTurnCompleteCondition) {
-            robocode.Bullet b = this.skynet.fireBullet(this.m_currentFirePower);
+            this.skynet.fire(this.m_firePower);
             m_currentTarget = null;
+            m_DebuggingTarget = null;
 
             this.setChanged();
-            this.notifyObservers(new BulletFired(b));
+            this.notifyObservers(new BulletFired());
         }
     }
 
-    /**
-     * Calculates the absolut bearing.
-     * @return absolut bearing.
-     */
-    private double absoluteBearing(double x1, double y1, double x2, double y2) {
-        // Math stolen from http://mark.random-article.com/robocode/lessons/PredictiveShooter.java
-        double xo = x2 - x1;
-        double yo = y2 - y1;
-        double hyp = Point2D.distance(x1, y1, x2, y2);
-        double arcSin = Math.toDegrees(Math.asin(xo / hyp));
-        double bearing = 0;
-
-        if (xo > 0 && yo > 0) { // both pos: lower-Left
-            bearing = arcSin;
-        } else if (xo < 0 && yo > 0) { // x neg, y pos: lower-right
-            bearing = 360 + arcSin; // arcsin is negative here, actually 360 - ang
-        } else if (xo > 0 && yo < 0) { // x pos, y neg: upper-left
-            bearing = 180 - arcSin;
-        } else if (xo < 0 && yo < 0) { // both neg: upper-right
-            bearing = 180 - arcSin; // arcsin is negative here, actually 180 + ang
+    @Override
+    public void drawDebug(Graphics2D g) {
+        if (m_DebuggingTarget != null) {
+            g.setColor(java.awt.Color.orange);
+            g.fillOval((int) m_DebuggingTarget.getX() - 8, (int) m_DebuggingTarget.getY() - 8, 8, 8);
         }
-
-        return bearing;
     }
 }

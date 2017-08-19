@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import robocode.*;
-import skynet.helper.LinearRegression;
 import skynet.Skynet;
 
 public class Enemy {
@@ -88,41 +87,15 @@ public class Enemy {
     return this.name;
   }
 
-  public Point2D.Double predictPosition(double turn) {
+  public Point2D.Double predictPosition(long turn) {
     Contact last = this.lastContact();
-    return new Point2D.Double(
-      last.getVelocity() * turn * Math.sin(Math.toRadians(last.getHeading())),
-      last.getVelocity() * turn * Math.cos(Math.toRadians(last.getHeading()))
-    );
 
-    /*final int PREDICTION_TURNS = 3;
+    double ax = last.getVelocity() * Math.sin(last.getHeading());
+    double ay = last.getVelocity() * Math.cos(last.getHeading());			
+    double bx = (last.getAbsolutPosition().getX()) - (ax * last.getTurn());
+    double by = (last.getAbsolutPosition().getY()) - (ay * last.getTurn());
+    long t = last.getTurn() + turn;
 
-    double[] xPos = new double[PREDICTION_TURNS], yPos = new double[PREDICTION_TURNS], timeline = new double[PREDICTION_TURNS];
-    
-    int index = 0;
-    for (Contact contact : this.events) {
-      if(index >= PREDICTION_TURNS) {
-        break;
-      }
-
-      Point2D.Double pos = contact.getAbsolutPosition();
-      timeline[index] = (double)contact.getTurn();
-      xPos[index] = pos.getX();
-      yPos[index] = pos.getY();
-
-      index += 1;
-    }
-
-    // Missing data!
-    if (index != PREDICTION_TURNS - 1) {
-      xPos = Arrays.copyOf(xPos, index + 1);
-      yPos = Arrays.copyOf(yPos, index + 1);
-      timeline = Arrays.copyOf(timeline, index + 1);
-    }
-
-    return new Point2D.Double(
-      (new LinearRegression(timeline, xPos)).predict(turn),
-      (new LinearRegression(timeline, yPos)).predict(turn)
-    ); */
+    return new Point2D.Double(ax * t + bx, ay * t + by);
   }
 }

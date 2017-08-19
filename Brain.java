@@ -26,15 +26,17 @@ public class Brain extends Observable implements Observer {
     }
 
     @Override public void update(Observable o, Object arg) {
-        if((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired)) {
+        if(((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired)) && !this.m_skynet.getFist().isAiming()) {
             this.m_skynet.getEye().scan();
             this.m_skynet.getLeg().fly();
-        }
-        /*} else if(arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
-            Enemy enemy = ((Eye.RobotNearby)arg).getEnemy();
+        } else if(arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
+            Enemy enemy = ((Eye.RobotNearby)arg).getRobot();
 
             this.m_skynet.getLeg().stop();
-            this.m_skynet.getFist().aim(enemy);
-        }*/
+            if(!this.m_skynet.getFist().aim(enemy)) {
+                this.m_skynet.getEye().scan();
+                this.m_skynet.getLeg().fly();
+            }
+        }
     }
 }
