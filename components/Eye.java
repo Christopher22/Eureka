@@ -176,7 +176,12 @@ public class Eye extends Component {
 	/**
 	 * Scans for other robots.
 	 */
-	public void scan() {
+	public void scan(boolean blocking) {
+		if(blocking) {
+			this.skynet.setTurnRadarLeft(360);
+			this.skynet.waitFor(new robocode.RadarTurnCompleteCondition(this.skynet));
+			this.skynet.execute();
+		}
 		this.skynet.setTurnRadarLeft(Double.POSITIVE_INFINITY);
 		this.skynet.execute();
 	}

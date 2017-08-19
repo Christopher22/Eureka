@@ -19,22 +19,22 @@ public class Leg extends Component {
   /**
    * The definition of a suitable distance towards a border.
    */
-  final static double BORDER_DEFINITION = 1.5;
+  final static double BORDER_DEFINITION = 3;
 
   /**
    * The minimal distance of a new point.
    */
-  final static int MINIMAL_MOVEMENT = 100;
+  final static int MINIMAL_MOVEMENT = 120;
 
   /**
    * The maximal distance torwards a new point.
    */
-  final static int MAXIMAL_MOVEMENT = 300;
+  final static int MAXIMAL_MOVEMENT = 200;
 
   /**
    * The number of flightpoints which are to be evaluated.
    */
-  final static int FLIGHT_POINTS = 40;
+  final static int FLIGHT_POINTS = 80;
 
   /**
    * An event which is fired if a current movement is complete.
@@ -44,28 +44,17 @@ public class Leg extends Component {
   /**
    * A potential position which is evaluated in terms of safety.
    */
-  public static class FlyPoint implements Comparable<FlyPoint> {
+  public static class FlightPoint extends Point2D.Double implements Comparable<FlightPoint> {
 
-    private Point2D.Double m_point;
     private double m_danger, m_radians;
 
     /**
      * Creates a new flypoint.
      */
-    public FlyPoint(Skynet skynet, double radians, int distance) {
-      this.m_point = new Point2D.Double(skynet.getX() + distance * Math.cos(radians),
-          skynet.getY() + distance * Math.sin(radians));
-
+    public FlightPoint(Leg leg, double radians, int distance) {
+      super(leg.skynet.getX() + distance * Math.cos(radians), leg.skynet.getY() + distance * Math.sin(radians));
       this.m_radians = radians;
-      this.m_danger = this.calculateDanger(skynet);
-    }
-
-    /**
-     * Returns the position of the point.
-     * @return the position.
-     */
-    public Point2D.Double getPoint() {
-      return this.m_point;
+      this.m_danger = this.calculateDanger(leg);
     }
 
     /**
@@ -87,45 +76,38 @@ public class Leg extends Component {
     /**
      * Compares a flypoint to another in terms of danger.
      */
-    public int compareTo(FlyPoint o) {
+    public int compareTo(FlightPoint o) {
       return (int) (this.m_danger - o.m_danger);
     }
 
     /**
      * Calculates the safety of a position.
      */
-    private double calculateDanger(Skynet skynet) {
-      if (this.m_point.getX() < skynet.getWidth() * BORDER_DEFINITION
-          || this.m_point.getX() > skynet.getBattleFieldWidth() - skynet.getWidth() * BORDER_DEFINITION
-          || this.m_point.getY() < skynet.getHeight() * BORDER_DEFINITION
-          || this.m_point.getY() > skynet.getBattleFieldHeight() - skynet.getHeight() * BORDER_DEFINITION) {
-        return Double.POSITIVE_INFINITY;
+    private double calculateDanger(Leg leg) {
+      if (this.getX() < leg.skynet.getWidth() * BORDER_DEFINITION
+          || this.getX() > leg.skynet.getBattleFieldWidth() - leg.skynet.getWidth() * BORDER_DEFINITION
+          || this.getY() < leg.skynet.getHeight() * BORDER_DEFINITION
+          || this.getY() > leg.skynet.getBattleFieldHeight() - leg.skynet.getHeight() * BORDER_DEFINITION) {
+        return java.lang.Double.POSITIVE_INFINITY;
       }
 
-      final Point2D.Double ownPos = skynet.getPosition();
-      double result = 0;
+      final Point2D.Double ownPos = leg.skynet.getPosition();
+      double result = 0.08 / (leg.m_lastFlightpoint != null ? this.distanceSq(leg.m_lastFlightpoint) : 1);
 
-      for (Enemy e : skynet.getEye().getCurrentEnemies()) {
+      for (Enemy e : leg.skynet.getEye().getCurrentEnemies()) {
         Point2D.Double enemyPos = e.lastContact().getAbsolutPosition();
         result += e.getDanger()
-            * (1 + Math.abs(Math.cos(HelperFunctions.bearing(ownPos, this.m_point) - HelperFunctions.bearing(enemyPos, this.m_point))))
-            / m_point.distance(enemyPos);
+            * (1 + Math.abs(Math.cos(HelperFunctions.bearing(ownPos, this) - HelperFunctions.bearing(enemyPos, this))))
+            / this.distance(enemyPos);
       }
 
       return result;
     }
-
-    /**
-     * Calculates the angle between two points.
-     * @return the angle between two points.
-     */
-    private static double calcAngle(Point2D.Double p2, Point2D.Double p1) {
-      return Math.atan2(p2.x - p1.x, p2.y - p1.y);
-    }
   }
 
   private boolean m_isMoving;
-  private FlyPoint[] m_flyPoints;
+  private FlightPoint[] m_flightPoints;
+  private FlightPoint m_lastFlightpoint;
 
   /**
    * Creates a new leg.
@@ -134,20 +116,21 @@ public class Leg extends Component {
     super(skynet);
 
     this.m_isMoving = false;
-    this.m_flyPoints = new FlyPoint[FLIGHT_POINTS];
+    this.m_flightPoints = new FlightPoint[FLIGHT_POINTS];
   }
 
   /**
    * Flight to an optimal safe point in range.
    */
-  public void fly() {
+  public void flight() {
     final double STEP = (2 * Math.PI) / FLIGHT_POINTS;
     for (int i = 0; i < FLIGHT_POINTS; i++) {
       int distance = Utils.getRandom().nextInt(MAXIMAL_MOVEMENT - MINIMAL_MOVEMENT) + MINIMAL_MOVEMENT;
-      this.m_flyPoints[i] = new FlyPoint(this.skynet, STEP / 2 + i * STEP, distance);
+      this.m_flightPoints[i] = new FlightPoint(this, STEP / 2 + i * STEP, distance);
     }
 
-    this.move(Collections.min(Arrays.asList(this.m_flyPoints)).getPoint());
+    FlightPoint min = Collections.min(Arrays.asList(this.m_flightPoints));
+    this.move(min);
   }
 
   /**
@@ -166,9 +149,17 @@ public class Leg extends Component {
     this.m_isMoving = false;
   }
 
-  /**
-   * Handles incoming events.
-   */
+  @Override
+  public void drawDebug(Graphics2D g) {
+
+    for (Leg.FlightPoint flypoint : this.m_flightPoints) {
+      if (flypoint != null) {
+        g.setColor(flypoint.m_danger != Double.POSITIVE_INFINITY ? java.awt.Color.RED : java.awt.Color.GRAY);
+        g.fillOval((int) flypoint.getX() - 8, (int) flypoint.getY() - 8, 8, 8);
+      }
+    }
+  }
+
   @Override
   public void update(Observable o, Object arg) {
     if (arg instanceof robocode.MoveCompleteCondition) {
@@ -178,24 +169,16 @@ public class Leg extends Component {
     }
   }
 
-  @Override
-  public void drawDebug(Graphics2D g) {
-    g.setColor(java.awt.Color.RED);
-		for (Leg.FlyPoint flypoint : this.m_flyPoints) {
-			if(flypoint != null) {
-				g.fillOval((int)flypoint.getPoint().getX() - 8, (int)flypoint.getPoint().getY() - 8, 8, 8);
-			}
-		}
-  }
-
   /**
    * Moves to a specific point.
    */
-  public void move(Point2D.Double target) {
+  public void move(FlightPoint target) {
     // Check that the robot does not drive against the wall
     double x = Math.min(Math.max(skynet.getWidth(), target.getX()), skynet.getBattleFieldWidth() - skynet.getWidth());
     double y = Math.min(Math.max(skynet.getHeight(), target.getY()),
         skynet.getBattleFieldHeight() - skynet.getHeight());
+
+    m_lastFlightpoint = target;
 
     // Adapted from http://old.robowiki.net/robowiki?Movement/CodeSnippetBasicGoTo
     double a;
