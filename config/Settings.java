@@ -50,7 +50,7 @@ public class Settings {
     }
 
     public void save(String name) throws IOException {
-        try (FileOutputStream fos = new FileOutputStream(name); ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+        try (FileOutputStream fos = new FileOutputStream(name, false); ObjectOutputStream oos = new ObjectOutputStream(fos)) {
             oos.writeObject(this.m_config);
         } catch (IOException ioe) {
             throw ioe;
@@ -58,7 +58,17 @@ public class Settings {
     }
 
     public boolean setValue(String name, double value) {
-        return this.m_config.get(name).setValue(value);
+        return this.m_config.get(name).setValue(value, this);
+    }
+
+    public double getValue(String name, Parameter defaultParameter) {
+        Parameter value = this.m_config.get(name);
+        if(value == null) {
+            this.m_config.put(name, defaultParameter);
+            return defaultParameter.getValue();
+        } else {
+            return value.getValue();
+        }
     }
 
     public int optimize(String robocodeDir, BattleSpecification specification, int robotId) {
@@ -119,15 +129,20 @@ public class Settings {
         List<List<Double>> parameterValues = new ArrayList<>(m_config.size());
         int parameterIndex = 0;
 
-        for (Map.Entry<String,Parameter> entry : this.m_config.entrySet()) {
-            ArrayList<Double> tmpValues = new ArrayList<>();
-            for (double value = entry.getValue().getMin(); value <= entry.getValue().getMax(); value += entry.getValue().getSteps()) {
-                tmpValues.add(value);
+        for (Map.Entry<String, Parameter> entry : this.m_config.entrySet()) {
+            // Ignore constants
+            if(entry.getValue() instanceof Range) {
+                Range range = (Range)entry.getValue();
+                ArrayList<Double> tmpValues = new ArrayList<>();
+                for (double value = range.getMin(); value <= range.getMax(); value += range.getSteps()) {
+                    tmpValues.add(value);
+                }
+    
+                labels[parameterIndex] = entry.getKey();
+                parameterValues.add(tmpValues);
+                ++parameterIndex;
             }
-
-            labels[parameterIndex] = entry.getKey();
-            parameterValues.add(tmpValues);
-            ++parameterIndex;
+            
         }
         return parameterValues;
     }
