@@ -13,7 +13,7 @@ public class Constant implements Parameter, Serializable, Cloneable {
     public double getValue() {
         return this.m_data;
     }
-    
+
     public boolean setValue(double value, Settings currentSettings) {
         return false;
     }

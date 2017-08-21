@@ -33,7 +33,7 @@ public class Range implements Parameter, Serializable, Cloneable {
     }
 
     public boolean setValue(double newValue, Settings currentSettings) {
-        if(newValue < this.m_max && newValue > this.m_min) {
+        if (newValue < this.m_max && newValue > this.m_min) {
             this.m_value = newValue;
             return true;
         } else {
@@ -41,7 +41,8 @@ public class Range implements Parameter, Serializable, Cloneable {
         }
     }
 
-    @Override public Object clone() {
+    @Override
+    public Object clone() {
         return new Range(this.m_value, this.m_min, this.m_max, this.m_steps);
     }
 }
