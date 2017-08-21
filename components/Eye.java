@@ -9,7 +9,9 @@ import java.awt.Graphics2D;
 import robocode.util.Utils;
 
 import skynet.Skynet;
+import skynet.Brain;
 import skynet.helper.*;
+import skynet.config.*;
 
 /**
  * The eye - tracks mutiple enemies and scan the environment.
@@ -46,7 +48,7 @@ public class Eye extends Component {
 		/**
 		 * The threshold in which a robot is classified as "nearby".
 		 */
-		public final static int THRESHOLD = 100;
+		public final static int THRESHOLD = (int)Brain.getMemory().getValue("Eye/NearbyThreshold", new Range(100, 50, 200, 10));
 
 		private Enemy m_robot;
 

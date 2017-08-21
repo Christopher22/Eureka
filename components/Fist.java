@@ -5,8 +5,10 @@ import java.util.Observable;
 import java.awt.Graphics2D;
 import robocode.util.Utils;
 
-import skynet.helper.*;
 import skynet.Skynet;
+import skynet.Brain;
+import skynet.helper.*;
+import skynet.config.*;
 
 /**
  * The fist - used to destroy enemies.
@@ -18,10 +20,12 @@ public class Fist extends Component {
      */
     public static class BulletFired implements Event {}
 
-    final static double POWER_CONSTANT = 500;
+    final static double POWER_CONSTANT = Brain.getMemory().getValue("Fist/PowerConstant", new Range(500, 400, 600, 50));
+
     final static long TICK_RANGE = 20;
     final static int ITERATIONS = 15;
     final static double ACCURACY = 0.01d;
+    
     private Enemy m_currentTarget;
     private double m_firePower;
     private Point2D.Double m_DebuggingTarget;

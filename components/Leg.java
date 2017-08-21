@@ -9,7 +9,9 @@ import java.util.Collections;
 import java.awt.Graphics2D;
 
 import skynet.Skynet;
+import skynet.Brain;
 import skynet.helper.*;
+import skynet.config.*;
 
 /**
  * The leg - used to control movement.
@@ -19,17 +21,35 @@ public class Leg extends Component {
   /**
    * The definition of a suitable distance towards a border.
    */
-  final static double BORDER_DEFINITION = 3;
+  final static double BORDER_DEFINITION = Brain.getMemory().getValue("Leg/Border", new Range(3, 1, 4, 0.5));
 
   /**
    * The minimal distance of a new point.
    */
-  final static int MINIMAL_MOVEMENT = 120;
+  final static int MINIMAL_MOVEMENT = (int)Brain.getMemory().getValue("Leg/MinMovement", new Range(120, 60, 200, 10) {
+    @Override
+    public boolean setValue(double value, Settings currentSettings) {
+      if (currentSettings.getValue("Leg/MaxMovement", null) >= value) {
+        return super.setValue(value, currentSettings);
+      } else {
+        return false;
+      }
+    }
+  });
 
   /**
    * The maximal distance torwards a new point.
    */
-  final static int MAXIMAL_MOVEMENT = 200;
+  final static int MAXIMAL_MOVEMENT = (int)Brain.getMemory().getValue("Leg/MaxMovement", new Range(280, 120, 300, 10) {
+    @Override
+    public boolean setValue(double value, Settings currentSettings) {
+      if (currentSettings.getValue("Leg/MinMovement", null) <= value) {
+        return super.setValue(value, currentSettings);
+      } else {
+        return false;
+      }
+    }
+  });
 
   /**
    * The number of flightpoints which are to be evaluated.
@@ -39,7 +59,8 @@ public class Leg extends Component {
   /**
    * An event which is fired if a current movement is complete.
    */
-  public static class MovementDone implements Event {}
+  public static class MovementDone implements Event {
+  }
 
   /**
    * A potential position which is evaluated in terms of safety.
