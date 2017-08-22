@@ -1,7 +1,5 @@
 package skynet;
 
-import skynet.components.*;
-
 import java.awt.geom.Point2D;
 import java.util.Observable;
 
@@ -9,6 +7,9 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 
 import robocode.*;
+
+import skynet.components.*;
+import skynet.helper.Signal;;
 
 /**
  * Skynet - a robot by (your name here)
@@ -44,7 +45,7 @@ public class Skynet extends AdvancedRobot {
 	}
 
 	public void onCustomEvent(CustomEvent event) {
-		this.m_brain.update(null, event.getCondition());
+		this.m_brain.update(null, new Signal.CustomEvent(event.getCondition()));
 		this.removeCustomEvent(event.getCondition());
 	}
 

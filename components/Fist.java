@@ -8,6 +8,8 @@ import robocode.util.Utils;
 import skynet.Skynet;
 import skynet.Brain;
 import skynet.helper.*;
+import skynet.helper.Signal.Command;
+import skynet.helper.Signal.Event;
 import skynet.config.*;
 
 /**
@@ -18,9 +20,11 @@ public class Fist extends Component {
     /**
      * An event which is fired after a bulled was fired.
      */
-    public static class BulletFired implements Signal.Event {}
+    public static class BulletFired implements Signal.Event {
+    }
 
-    public static class AimAborted implements Signal.Event {}
+    public static class AimAborted implements Signal.Event {
+    }
 
     public static class EyeSynchronized extends robocode.Condition {
         final Skynet m_skynet;
@@ -41,7 +45,7 @@ public class Fist extends Component {
     public final static long TICK_RANGE = 20;
     public final static int ITERATIONS = 15;
     public final static double ACCURACY = 0.01d;
-    
+
     private Enemy m_currentTarget;
     private double m_firePower;
     private Point2D.Double m_DebuggingTarget;
@@ -67,8 +71,10 @@ public class Fist extends Component {
         long ct = secant(time(target.lastContact().getDistance(), this.PowerConstant), target, this.PowerConstant);
         Point2D.Double p = target.predictPosition(ct);
         this.m_firePower = calculateFirePower(HelperFunctions.range(this.skynet.getPosition(), p), this.PowerConstant);
-        double calculatedBearing = HelperFunctions.bearing(this.skynet.getPosition(), p) - this.skynet.getHeadingRadians();
-        double turnGun = Utils.normalRelativeAngle(this.skynet.getHeadingRadians() - this.skynet.getGunHeadingRadians() + calculatedBearing);
+        double calculatedBearing = HelperFunctions.bearing(this.skynet.getPosition(), p)
+                - this.skynet.getHeadingRadians();
+        double turnGun = Utils.normalRelativeAngle(
+                this.skynet.getHeadingRadians() - this.skynet.getGunHeadingRadians() + calculatedBearing);
 
         if (this.skynet.getGunHeat() != 0 || this.m_firePower < robocode.Rules.MIN_BULLET_POWER) {
             m_currentTarget = null;
@@ -129,21 +135,21 @@ public class Fist extends Component {
         return m_currentTarget != null;
     }
 
-    /**
-     * Handles incoming events.
-     */
     @Override
-    public void update(Observable o, Object arg) {
-        if (arg instanceof Brain.Attack && !this.aim(((Brain.Attack)arg).getEnemy())) {
+    protected void handleCommand(Command command) {
+        if (command instanceof Brain.Attack && !this.aim(((Brain.Attack) command).getEnemy())) {
             this.sendSignal(new AimAborted());
-        } else if (arg instanceof robocode.GunTurnCompleteCondition && this.isAiming()) {
+        }
+    }
+
+    protected void handleEvent(Event event) {
+        if (event instanceof Signal.CustomEvent
+                && ((Signal.CustomEvent) event).getCondition() instanceof robocode.GunTurnCompleteCondition
+                && this.isAiming()) {
             this.skynet.fire(this.m_firePower);
             m_currentTarget = null;
             m_DebuggingTarget = null;
             this.sendSignal(new BulletFired());
-        } else if(arg instanceof Eye.RadarMoving && !this.isAiming()) {
-            this.skynet.setTurnGunLeft(((Eye.RadarMoving)arg).getDegrees());
-            this.skynet.execute(); 
         }
     }
 

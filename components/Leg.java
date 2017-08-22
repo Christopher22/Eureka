@@ -11,6 +11,8 @@ import java.awt.Graphics2D;
 import skynet.Skynet;
 import skynet.Brain;
 import skynet.helper.*;
+import skynet.helper.Signal.Command;
+import skynet.helper.Signal.Event;
 import skynet.config.*;
 
 /**
@@ -188,10 +190,15 @@ public class Leg extends Component {
   }
 
   @Override
-  public void update(Observable o, Object arg) {
-    if(arg instanceof Brain.Move) {
+  protected void handleCommand(Command command) {
+    if(command instanceof Brain.Move) {
       this.flight();
-    } else if (arg instanceof robocode.MoveCompleteCondition) {
+    }
+  }
+
+  @Override
+  protected void handleEvent(Event event) {
+    if (event instanceof Signal.CustomEvent && ((Signal.CustomEvent)event).getCondition() instanceof robocode.MoveCompleteCondition) {
       this.m_isMoving = false;
       this.setChanged();
       this.notifyObservers(new MovementDone());

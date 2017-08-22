@@ -44,4 +44,20 @@ public abstract class Component extends Observable implements Observer {
     this.setChanged();
     this.notifyObservers(signal);
   }
+
+  protected abstract void handleCommand(Signal.Command command);
+
+  protected void handleEvent(Signal.Event event) {
+  }
+
+  @Override
+  public final void update(Observable o, Object arg) {
+    if (arg instanceof Signal.Event) {
+      this.handleEvent((Signal.Event) arg);
+    } else if (arg instanceof Signal.Command) {
+      this.handleCommand((Signal.Command) arg);
+    } else {
+      throw new IllegalArgumentException("Signal expected");
+    }
+  }
 }

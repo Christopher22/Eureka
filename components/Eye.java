@@ -140,7 +140,7 @@ public class Eye extends Component {
 		}
 
 		public Direction reverse() {
-			 return (this == Direction.Right ? Direction.Left : Direction.Right);
+			return (this == Direction.Right ? Direction.Left : Direction.Right);
 		}
 	}
 
@@ -162,7 +162,6 @@ public class Eye extends Component {
 	public Eye(Skynet skynet) {
 		super(skynet);
 		this.skynet.setAdjustRadarForRobotTurn(true);
-		//this.skynet.setAdjustRadarForGunTurn(false);
 
 		this.Threshold = (int) skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(150, 100, 300, 10));
 
@@ -171,15 +170,10 @@ public class Eye extends Component {
 		this.m_direction = Direction.Left;
 	}
 
-	/**
-	 * Handle incoming events.
-	 */
 	@Override
-	public void update(Observable o, Object arg) {
-		if (arg instanceof Brain.Scan) {
-			this.scan();
-		} else if (arg instanceof RobotFound) {
-			robocode.ScannedRobotEvent enemy = ((RobotFound) arg).getRobot();
+	protected void handleEvent(Signal.Event event) {
+		if (event instanceof RobotFound) {
+			robocode.ScannedRobotEvent enemy = ((RobotFound) event).getRobot();
 
 			// Add enemy to queue, if not already happen.
 			Enemy e = this.m_enemies.get(enemy.getName());
@@ -193,11 +187,19 @@ public class Eye extends Component {
 			if (e.lastContact().getDistance() < this.Threshold) {
 				this.sendSignal(new RobotNearby(e));
 			}
-		} else if (arg instanceof robocode.RadarTurnCompleteCondition) {
+		} else if (event instanceof Signal.CustomEvent
+				&& ((Signal.CustomEvent) event).getCondition() instanceof robocode.RadarTurnCompleteCondition) {
 			if (this.m_isTurningComplete) {
 				this.m_isTurningComplete = false;
 			}
 			this.sendSignal(new ScanningComplete());
+		}
+	}
+
+	@Override
+	protected void handleCommand(Signal.Command command) {
+		if (command instanceof Brain.Scan) {
+			this.scan();
 		}
 	}
 
