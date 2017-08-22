@@ -56,13 +56,17 @@ public class Brain extends Observable implements Observer {
         this.sendSignal(new Brain.Scan());
     }
 
-    private void sendSignal(Object mission) {       
+    private void sendSignal(Signal mission) {       
         this.setChanged();
         this.notifyObservers(mission);
     }
 
     @Override
     public void update(Observable o, Object arg) {
+        if(!(arg instanceof Signal)) {
+            throw new IllegalArgumentException("Signal expected");
+        }
+
         // Print current signal to the console
         this.m_skynet.out.format("[%s] %s\n", arg instanceof Signal.Command ? "Command" : "Event", arg.getClass().getSimpleName());
 
@@ -81,6 +85,8 @@ public class Brain extends Observable implements Observer {
             this.m_skynet.execute();
         }
 
-        this.sendSignal(arg);
+        if(arg instanceof Signal.Event) {
+            this.sendSignal((Signal.Event)arg);
+        }
     }
 }
