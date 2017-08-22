@@ -155,7 +155,7 @@ public class Eye extends Component {
 		this.skynet.setAdjustRadarForRobotTurn(true);
 		//this.skynet.setAdjustRadarForGunTurn(false);
 
-		this.Threshold = (int)skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(100, 50, 200, 10));
+		this.Threshold = (int)skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(150, 100, 300, 10));
 		this.m_enemies = new HashMap<String, Enemy>();
 	}
 
@@ -205,7 +205,6 @@ public class Eye extends Component {
 		this.skynet.setTurnRadarLeft(360);
 		this.sendSignal(new RadarMoving(360));
 		this.skynet.addCustomEvent(new robocode.RadarTurnCompleteCondition(this.skynet));
-		this.skynet.execute();
 	}
 
 	/**

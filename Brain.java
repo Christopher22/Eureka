@@ -68,14 +68,17 @@ public class Brain extends Observable implements Observer {
 
         if (((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired)) || (arg instanceof Fist.AimAborted)  && !this.m_skynet.getFist().isAiming()) {
             this.sendSignal(new Brain.Move());
+            this.m_skynet.execute();
         } else if (arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
             this.sendSignal(new Brain.Stop());
             this.sendSignal(new Brain.Attack(((Eye.RobotNearby) arg).getRobot()));
+            this.m_skynet.execute();
         } else if(arg instanceof Eye.ScanningComplete) {
             this.sendSignal(new Brain.Scan());
             if(!this.m_skynet.getLeg().isMoving()) {
                 this.sendSignal(new Brain.Move());
             }
+            this.m_skynet.execute();
         }
 
         this.sendSignal(arg);

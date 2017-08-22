@@ -77,7 +77,6 @@ public class Fist extends Component {
 
         this.skynet.setTurnGunRightRadians(turnGun);
         this.skynet.addCustomEvent(new robocode.GunTurnCompleteCondition(this.skynet));
-        this.skynet.execute();
         return true;
     }
 
@@ -137,7 +136,7 @@ public class Fist extends Component {
     public void update(Observable o, Object arg) {
         if (arg instanceof Brain.Attack && !this.aim(((Brain.Attack)arg).getEnemy())) {
             this.sendSignal(new AimAborted());
-        } else if (arg instanceof robocode.GunTurnCompleteCondition) {
+        } else if (arg instanceof robocode.GunTurnCompleteCondition && this.isAiming()) {
             this.skynet.fire(this.m_firePower);
             m_currentTarget = null;
             m_DebuggingTarget = null;

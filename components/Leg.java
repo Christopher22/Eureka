@@ -217,7 +217,6 @@ public class Leg extends Component {
 
     this.skynet.addCustomEvent(new robocode.MoveCompleteCondition(this.skynet));
 
-    this.skynet.execute();
     this.m_isMoving = true;
   }
 }
