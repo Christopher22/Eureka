@@ -22,18 +22,18 @@ public class Skynet extends AdvancedRobot {
 
 	public void run() {
 		this.m_brain = new Brain(this);
-		
+
 		this.eye = new Eye(this);
 		this.leg = new Leg(this);
 		this.fist = new Fist(this);
-		
+
 		m_brain.life();
 	}
 
 	public Point2D.Double getPosition() {
 		return new Point2D.Double(this.getX(), this.getY());
 	}
-	 
+
 	public void onPaint(Graphics2D g) {
 		this.eye.drawDebug(g);
 		this.leg.drawDebug(g);

@@ -24,7 +24,7 @@ public class Brain extends Observable implements Observer {
 
     public static class Attack implements Signal.Command {
         private final Enemy m_target;
-        
+
         public Attack(final Enemy target) {
             this.m_target = target;
         }
@@ -56,37 +56,39 @@ public class Brain extends Observable implements Observer {
         this.sendSignal(new Brain.Scan());
     }
 
-    private void sendSignal(Signal mission) {       
+    private void sendSignal(Signal mission) {
         this.setChanged();
         this.notifyObservers(mission);
     }
 
     @Override
     public void update(Observable o, Object arg) {
-        if(!(arg instanceof Signal)) {
+        if (!(arg instanceof Signal)) {
             throw new IllegalArgumentException("Signal expected");
         }
 
         // Print current signal to the console
-        this.m_skynet.out.format("[%s] %s\n", arg instanceof Signal.Command ? "Command" : "Event", arg.getClass().getSimpleName());
+        this.m_skynet.out.format("[%s] %s\n", arg instanceof Signal.Command ? "Command" : "Event",
+                arg.getClass().getSimpleName());
 
-        if (((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired)) || (arg instanceof Fist.AimAborted)  && !this.m_skynet.getFist().isAiming()) {
+        if (((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired))
+                || (arg instanceof Fist.AimAborted) && !this.m_skynet.getFist().isAiming()) {
             this.sendSignal(new Brain.Move());
             this.m_skynet.execute();
         } else if (arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
             this.sendSignal(new Brain.Stop());
             this.sendSignal(new Brain.Attack(((Eye.RobotNearby) arg).getRobot()));
             this.m_skynet.execute();
-        } else if(arg instanceof Eye.ScanningComplete) {
+        } else if (arg instanceof Eye.ScanningComplete) {
             this.sendSignal(new Brain.Scan());
-            if(!this.m_skynet.getLeg().isMoving()) {
+            if (!this.m_skynet.getLeg().isMoving()) {
                 this.sendSignal(new Brain.Move());
             }
             this.m_skynet.execute();
         }
 
-        if(arg instanceof Signal.Event) {
-            this.sendSignal((Signal.Event)arg);
+        if (arg instanceof Signal.Event) {
+            this.sendSignal((Signal.Event) arg);
         }
     }
 }

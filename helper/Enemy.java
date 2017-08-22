@@ -26,7 +26,8 @@ public class Enemy {
       this.m_bearing = enemy.getBearing();
 
       double angle = Math.toRadians((skynet.getHeading() + enemy.getBearing()) % 360);
-      m_position = new Point2D.Double(skynet.getX() + Math.sin(angle) * enemy.getDistance(), skynet.getY() + Math.cos(angle) * enemy.getDistance());
+      m_position = new Point2D.Double(skynet.getX() + Math.sin(angle) * enemy.getDistance(),
+          skynet.getY() + Math.cos(angle) * enemy.getDistance());
 
       this.m_distance = this.m_position.distance(skynet.getX(), skynet.getY());
     }
@@ -50,7 +51,7 @@ public class Enemy {
     public double getBearing() {
       return this.m_bearing;
     }
-    
+
     public Point2D.Double getAbsolutPosition() {
       return this.m_position;
     }
@@ -97,7 +98,7 @@ public class Enemy {
     Contact last = this.lastContact();
 
     double ax = last.getVelocity() * Math.sin(last.getHeading());
-    double ay = last.getVelocity() * Math.cos(last.getHeading());			
+    double ay = last.getVelocity() * Math.cos(last.getHeading());
     double bx = (last.getAbsolutPosition().getX()) - (ax * last.getTurn());
     double by = (last.getAbsolutPosition().getY()) - (ay * last.getTurn());
     long t = last.getTurn() + turn;

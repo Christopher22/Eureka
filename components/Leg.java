@@ -123,7 +123,7 @@ public class Leg extends Component {
     this.m_isMoving = false;
     this.m_flightPoints = new FlightPoint[FLIGHT_POINTS];
 
-    this.MaximalMovement = (int)skynet.getBrain().accessMemory("Leg/MaxMovement", new Range(120, 120, 300, 10) {
+    this.MaximalMovement = (int) skynet.getBrain().accessMemory("Leg/MaxMovement", new Range(120, 120, 300, 10) {
       @Override
       public boolean setValue(double value, Memory<Parameter> currentMemory) {
         if (currentMemory.getValue("Leg/MinMovement", null).getValue() <= value) {
@@ -134,7 +134,7 @@ public class Leg extends Component {
       }
     });
 
-    this.MinimalMovement = (int)skynet.getBrain().accessMemory("Leg/MinMovement", new Range(50, 60, 200, 10) {
+    this.MinimalMovement = (int) skynet.getBrain().accessMemory("Leg/MinMovement", new Range(50, 60, 200, 10) {
       @Override
       public boolean setValue(double value, Memory<Parameter> currentMemory) {
         if (currentMemory.getValue("Leg/MaxMovement", null).getValue() >= value) {
@@ -191,14 +191,15 @@ public class Leg extends Component {
 
   @Override
   protected void handleCommand(Command command) {
-    if(command instanceof Brain.Move) {
+    if (command instanceof Brain.Move) {
       this.flight();
     }
   }
 
   @Override
   protected void handleEvent(Event event) {
-    if (event instanceof Signal.CustomEvent && ((Signal.CustomEvent)event).getCondition() instanceof robocode.MoveCompleteCondition) {
+    if (event instanceof Signal.CustomEvent
+        && ((Signal.CustomEvent) event).getCondition() instanceof robocode.MoveCompleteCondition) {
       this.m_isMoving = false;
       this.setChanged();
       this.notifyObservers(new MovementDone());

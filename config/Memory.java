@@ -51,7 +51,7 @@ public class Memory<Data extends Serializable> {
     public Data getValue(String name, Data defaultData) {
         Data value = this.m_config.get(name);
         if (value == null) {
-            if(defaultData == null) {
+            if (defaultData == null) {
                 throw new IllegalArgumentException("DefaultData was null");
             }
             this.m_config.put(name, defaultData);
