@@ -139,6 +139,9 @@ public class Fist extends Component {
     protected void handleCommand(Command command) {
         if (command instanceof Brain.Attack && !this.aim(((Brain.Attack) command).getEnemy())) {
             this.sendSignal(new AimAborted());
+        } else if (command instanceof Brain.Move && !this.isAiming()) {
+            this.skynet.setTurnGunRightRadians(
+                    Utils.normalRelativeAngle(this.skynet.getHeadingRadians() - this.skynet.getGunHeadingRadians()));
         }
     }
 
