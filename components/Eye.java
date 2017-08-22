@@ -63,7 +63,7 @@ public class Eye extends Component {
 		}
 	}
 
-	/**
+	/**ary
 	 * An iterator over all the enemies with more or less up-to-date information.
 	 */
 	public class CurrentEnemyIterator implements Iterator<Enemy>, Iterable<Enemy> {
@@ -126,18 +126,25 @@ public class Eye extends Component {
 		}
 	}
 
-	public static class ScanningComplete implements Signal.Event {}
+	public enum Direction {
+		Right(1), Left(-1);
 
-	public static class RadarMoving implements Signal.Event {
-		private final double m_degrees;
+		private int m_direction;
 
-		public RadarMoving(double degrees) {
-			this.m_degrees = degrees;
+		private Direction(int direction) {
+			this.m_direction = direction;
 		}
 
-		public double getDegrees() {
-			return this.m_degrees;
+		public double getRotationToRight(double degrees) {
+			return degrees * this.m_direction;
 		}
+
+		public Direction reverse() {
+			 return (this == Direction.Right ? Direction.Left : Direction.Right);
+		}
+	}
+
+	public static class ScanningComplete implements Signal.Event {
 	}
 
 	/**
@@ -146,6 +153,8 @@ public class Eye extends Component {
 	public final int Threshold;
 
 	private HashMap<String, Enemy> m_enemies;
+	private boolean m_isTurningComplete;
+	private Direction m_direction;
 
 	/**
 	 * Create the eye.
@@ -155,8 +164,11 @@ public class Eye extends Component {
 		this.skynet.setAdjustRadarForRobotTurn(true);
 		//this.skynet.setAdjustRadarForGunTurn(false);
 
-		this.Threshold = (int)skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(150, 100, 300, 10));
+		this.Threshold = (int) skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(150, 100, 300, 10));
+
 		this.m_enemies = new HashMap<String, Enemy>();
+		this.m_isTurningComplete = true;
+		this.m_direction = Direction.Left;
 	}
 
 	/**
@@ -164,7 +176,7 @@ public class Eye extends Component {
 	 */
 	@Override
 	public void update(Observable o, Object arg) {
-		if(arg instanceof Brain.Scan) {
+		if (arg instanceof Brain.Scan) {
 			this.scan();
 		} else if (arg instanceof RobotFound) {
 			robocode.ScannedRobotEvent enemy = ((RobotFound) arg).getRobot();
@@ -181,7 +193,10 @@ public class Eye extends Component {
 			if (e.lastContact().getDistance() < this.Threshold) {
 				this.sendSignal(new RobotNearby(e));
 			}
-		} else if(arg instanceof robocode.RadarTurnCompleteCondition) {
+		} else if (arg instanceof robocode.RadarTurnCompleteCondition) {
+			if (this.m_isTurningComplete) {
+				this.m_isTurningComplete = false;
+			}
 			this.sendSignal(new ScanningComplete());
 		}
 	}
@@ -202,8 +217,29 @@ public class Eye extends Component {
 	 * Scans for other robots.
 	 */
 	private void scan() {
-		this.skynet.setTurnRadarLeft(360);
-		this.sendSignal(new RadarMoving(360));
+		if (m_isTurningComplete || Utils.getRandom().nextInt(3) == 2) {
+			this.skynet.setTurnRadarRight(360);
+		} else {
+			// Highly modified version from https://www.ibm.com/developerworks/library/j-radar/index.html
+			double maxBearingAbs = 0, maxBearing = 0;
+			int scannedBots = 0;
+			for (Enemy enemy : this.getCurrentEnemies()) {
+				double bearing = Utils.normalRelativeAngle(
+						this.skynet.getHeading() + enemy.lastContact().getBearing() - this.skynet.getRadarHeading());
+				if (Math.abs(bearing) > maxBearingAbs) {
+					maxBearingAbs = Math.abs(bearing);
+					maxBearing = bearing;
+				}
+				scannedBots++;
+			}
+
+			double radarTurn = this.m_direction.getRotationToRight(180);
+			if (scannedBots == this.skynet.getOthers())
+				radarTurn = maxBearing + Math.signum(maxBearing) * 22.5;
+
+			this.skynet.setTurnRadarRight(radarTurn);
+			this.m_direction = this.m_direction.reverse();
+		}
 		this.skynet.addCustomEvent(new robocode.RadarTurnCompleteCondition(this.skynet));
 	}
 
