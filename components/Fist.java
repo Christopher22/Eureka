@@ -20,6 +20,20 @@ public class Fist extends Component {
      */
     public static class BulletFired implements Event {}
 
+    public static class EyeSynchronized extends robocode.Condition {
+        final Skynet m_skynet;
+
+        public EyeSynchronized(Skynet skynet) {
+            super("EyeSynchronized");
+            this.m_skynet = skynet;
+        }
+
+        @Override
+        public boolean test() {
+            return this.m_skynet.getEye().getHeading() == this.m_skynet.getFist().getHeading();
+        };
+    }
+
     final static double POWER_CONSTANT = Brain.getMemory().getValue("Fist/PowerConstant", new Range(500, 400, 600, 50));
 
     final static long TICK_RANGE = 20;
@@ -37,7 +51,7 @@ public class Fist extends Component {
         super(skynet);
         this.m_currentTarget = null;
 
-        this.skynet.setAdjustRadarForGunTurn(true);
+        this.skynet.setAdjustRadarForGunTurn(false);
     }
 
     /**
@@ -57,6 +71,7 @@ public class Fist extends Component {
             return false;
         }
 
+        this.skynet.setAdjustRadarForGunTurn(true);
         this.skynet.setTurnGunRightRadians(turnGun);
         this.skynet.addCustomEvent(new robocode.GunTurnCompleteCondition(this.skynet));
         this.skynet.execute();
@@ -124,6 +139,10 @@ public class Fist extends Component {
 
             this.setChanged();
             this.notifyObservers(new BulletFired());
+
+            this.skynet.addCustomEvent(new EyeSynchronized(this.skynet));
+        } else if(arg instanceof EyeSynchronized) {
+            this.skynet.setAdjustRadarForGunTurn(false);
         }
     }
 

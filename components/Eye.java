@@ -175,6 +175,10 @@ public class Eye extends Component {
 		return this.m_enemies.get(name);
 	}
 
+	public double getHeading() {
+		return this.skynet.getRadarHeading();
+	}
+	
 	/**
 	 * Scans for other robots.
 	 */
