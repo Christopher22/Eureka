@@ -21,7 +21,7 @@ public class Eye extends Component {
 	/**
 	 * An event which is fired when a robot was found on the map.
 	 */
-	public static class RobotFound implements Event {
+	public static class RobotFound implements Signal.Event {
 		private robocode.ScannedRobotEvent m_robot;
 
 		/**
@@ -43,7 +43,7 @@ public class Eye extends Component {
 	/**
 	 * An event which is fired if a robot is nearby.
 	 */
-	public static class RobotNearby implements Event {
+	public static class RobotNearby implements Signal.Event {
 
 		private Enemy m_robot;
 
@@ -126,6 +126,20 @@ public class Eye extends Component {
 		}
 	}
 
+	public static class ScanningComplete implements Signal.Event {}
+
+	public static class RadarMoving implements Signal.Event {
+		private final double m_degrees;
+
+		public RadarMoving(double degrees) {
+			this.m_degrees = degrees;
+		}
+
+		public double getDegrees() {
+			return this.m_degrees;
+		}
+	}
+
 	/**
 	* The threshold in which a robot is classified as "nearby".
 	*/
@@ -150,7 +164,9 @@ public class Eye extends Component {
 	 */
 	@Override
 	public void update(Observable o, Object arg) {
-		if (arg instanceof RobotFound) {
+		if(arg instanceof Brain.Scan) {
+			this.scan();
+		} else if (arg instanceof RobotFound) {
 			robocode.ScannedRobotEvent enemy = ((RobotFound) arg).getRobot();
 
 			// Add enemy to queue, if not already happen.
@@ -163,9 +179,10 @@ public class Eye extends Component {
 			}
 
 			if (e.lastContact().getDistance() < this.Threshold) {
-				this.setChanged();
-				this.notifyObservers(new RobotNearby(e));
+				this.sendSignal(new RobotNearby(e));
 			}
+		} else if(arg instanceof robocode.RadarTurnCompleteCondition) {
+			this.sendSignal(new ScanningComplete());
 		}
 	}
 
@@ -184,13 +201,10 @@ public class Eye extends Component {
 	/**
 	 * Scans for other robots.
 	 */
-	public void scan(boolean blocking) {
-		if (blocking) {
-			this.skynet.setTurnRadarLeft(360);
-			this.skynet.waitFor(new robocode.RadarTurnCompleteCondition(this.skynet));
-			this.skynet.execute();
-		}
-		this.skynet.setTurnRadarLeft(Double.POSITIVE_INFINITY);
+	private void scan() {
+		this.skynet.setTurnRadarLeft(360);
+		this.sendSignal(new RadarMoving(360));
+		this.skynet.addCustomEvent(new robocode.RadarTurnCompleteCondition(this.skynet));
 		this.skynet.execute();
 	}
 

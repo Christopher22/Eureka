@@ -7,6 +7,7 @@ import java.awt.Graphics2D;
 import robocode.*;
 
 import skynet.Skynet;
+import skynet.helper.Signal;
 
 /**
  * An functional unit of 'Skynet', mimicking human anatomy.
@@ -36,5 +37,11 @@ public abstract class Component extends Observable implements Observer {
   /**
    * Callback for handling debugging drawing.
    */
-  public void drawDebug(Graphics2D output) {}
+  public void drawDebug(Graphics2D output) {
+  }
+
+  protected void sendSignal(Signal signal) {
+    this.setChanged();
+    this.notifyObservers(signal);
+  }
 }

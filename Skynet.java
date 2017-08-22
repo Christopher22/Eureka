@@ -40,11 +40,11 @@ public class Skynet extends AdvancedRobot {
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {
-		this.m_brain.sendProgress(new Eye.RobotFound(e));
+		this.m_brain.update(null, new Eye.RobotFound(e));
 	}
 
 	public void onCustomEvent(CustomEvent event) {
-		this.m_brain.sendProgress(event.getCondition());
+		this.m_brain.update(null, event.getCondition());
 		this.removeCustomEvent(event.getCondition());
 	}
 

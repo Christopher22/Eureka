@@ -18,7 +18,9 @@ public class Fist extends Component {
     /**
      * An event which is fired after a bulled was fired.
      */
-    public static class BulletFired implements Event {}
+    public static class BulletFired implements Signal.Event {}
+
+    public static class AimAborted implements Signal.Event {}
 
     public static class EyeSynchronized extends robocode.Condition {
         final Skynet m_skynet;
@@ -53,13 +55,13 @@ public class Fist extends Component {
         this.PowerConstant = skynet.getBrain().accessMemory("Fist/PowerConstant", new Range(500, 400, 600, 50));
 
         this.skynet.setAdjustGunForRobotTurn(true);
-        //this.skynet.setAdjustRadarForGunTurn(false);
+        this.skynet.setAdjustRadarForGunTurn(true);
     }
 
     /**
      * Aim an enemy.
      */
-    public boolean aim(Enemy target) {
+    private boolean aim(Enemy target) {
         m_currentTarget = target;
 
         long ct = secant(time(target.lastContact().getDistance(), this.PowerConstant), target, this.PowerConstant);
@@ -73,7 +75,6 @@ public class Fist extends Component {
             return false;
         }
 
-        this.skynet.setAdjustRadarForGunTurn(true);
         this.skynet.setTurnGunRightRadians(turnGun);
         this.skynet.addCustomEvent(new robocode.GunTurnCompleteCondition(this.skynet));
         this.skynet.execute();
@@ -134,17 +135,16 @@ public class Fist extends Component {
      */
     @Override
     public void update(Observable o, Object arg) {
-        if (arg instanceof robocode.GunTurnCompleteCondition) {
+        if (arg instanceof Brain.Attack && !this.aim(((Brain.Attack)arg).getEnemy())) {
+            this.sendSignal(new AimAborted());
+        } else if (arg instanceof robocode.GunTurnCompleteCondition) {
             this.skynet.fire(this.m_firePower);
             m_currentTarget = null;
             m_DebuggingTarget = null;
-
-            this.setChanged();
-            this.notifyObservers(new BulletFired());
-
-            this.skynet.addCustomEvent(new EyeSynchronized(this.skynet));
-        } else if(arg instanceof EyeSynchronized) {
-            this.skynet.setAdjustRadarForGunTurn(false);
+            this.sendSignal(new BulletFired());
+        } else if(arg instanceof Eye.RadarMoving && !this.isAiming()) {
+            this.skynet.setTurnGunLeft(((Eye.RadarMoving)arg).getDegrees());
+            this.skynet.execute(); 
         }
     }
 

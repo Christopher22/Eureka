@@ -13,6 +13,27 @@ public class Brain extends Observable implements Observer {
     private Memory<Parameter> m_memory;
     private boolean m_isTraining;
 
+    public static class Move implements Signal.Command {
+    }
+
+    public static class Stop implements Signal.Command {
+    }
+
+    public static class Scan implements Signal.Command {
+    }
+
+    public static class Attack implements Signal.Command {
+        private final Enemy m_target;
+        
+        public Attack(final Enemy target) {
+            this.m_target = target;
+        }
+
+        public Enemy getEnemy() {
+            return this.m_target;
+        }
+    }
+
     public Brain(Skynet skynet) {
         this.m_skynet = skynet;
         if ((this.m_memory = Memory.load(new File(skynet.getDataDirectory(), Trainer.TRAINING_FILENAME))) != null) {
@@ -32,30 +53,31 @@ public class Brain extends Observable implements Observer {
     }
 
     public void life() {
-        this.m_skynet.getEye().scan(true);
-        this.m_skynet.getLeg().flight();
+        this.sendSignal(new Brain.Scan());
     }
 
-    public void sendProgress(Object mission) {
-        this.update(this, mission);
+    private void sendSignal(Object mission) {       
         this.setChanged();
         this.notifyObservers(mission);
     }
 
     @Override
     public void update(Observable o, Object arg) {
-        if (((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired))
-                && !this.m_skynet.getFist().isAiming()) {
-            this.m_skynet.getEye().scan(false);
-            this.m_skynet.getLeg().flight();
-        } else if (arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
-            Enemy enemy = ((Eye.RobotNearby) arg).getRobot();
+        // Print current signal to the console
+        this.m_skynet.out.format("[%s] %s\n", arg instanceof Signal.Command ? "Command" : "Event", arg.getClass().getSimpleName());
 
-            this.m_skynet.getLeg().stop();
-            if (!this.m_skynet.getFist().aim(enemy)) {
-                this.m_skynet.getEye().scan(false);
-                this.m_skynet.getLeg().flight();
+        if (((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired)) || (arg instanceof Fist.AimAborted)  && !this.m_skynet.getFist().isAiming()) {
+            this.sendSignal(new Brain.Move());
+        } else if (arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
+            this.sendSignal(new Brain.Stop());
+            this.sendSignal(new Brain.Attack(((Eye.RobotNearby) arg).getRobot()));
+        } else if(arg instanceof Eye.ScanningComplete) {
+            this.sendSignal(new Brain.Scan());
+            if(!this.m_skynet.getLeg().isMoving()) {
+                this.sendSignal(new Brain.Move());
             }
         }
+
+        this.sendSignal(arg);
     }
 }

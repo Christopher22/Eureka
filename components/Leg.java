@@ -26,7 +26,7 @@ public class Leg extends Component {
   /**
    * An event which is fired if a current movement is complete.
    */
-  public static class MovementDone implements Event {
+  public static class MovementDone implements Signal.Event {
   }
 
   /**
@@ -149,7 +149,7 @@ public class Leg extends Component {
   /**
    * Flight to an optimal safe point in range.
    */
-  public void flight() {
+  protected void flight() {
     final double STEP = (2 * Math.PI) / FLIGHT_POINTS;
     for (int i = 0; i < FLIGHT_POINTS; i++) {
       int distance = Utils.getRandom().nextInt(this.MaximalMovement - this.MinimalMovement) + this.MinimalMovement;
@@ -189,7 +189,9 @@ public class Leg extends Component {
 
   @Override
   public void update(Observable o, Object arg) {
-    if (arg instanceof robocode.MoveCompleteCondition) {
+    if(arg instanceof Brain.Move) {
+      this.flight();
+    } else if (arg instanceof robocode.MoveCompleteCondition) {
       this.m_isMoving = false;
       this.setChanged();
       this.notifyObservers(new MovementDone());
