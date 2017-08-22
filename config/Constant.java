@@ -14,7 +14,7 @@ public class Constant implements Parameter, Serializable, Cloneable {
         return this.m_data;
     }
 
-    public boolean setValue(double value, Settings currentSettings) {
+    public boolean setValue(double value, Memory<Parameter> currentMemory) {
         return false;
     }
 }

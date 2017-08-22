@@ -19,39 +19,6 @@ import skynet.config.*;
 public class Leg extends Component {
 
   /**
-   * The definition of a suitable distance towards a border.
-   */
-  final static double BORDER_DEFINITION = Brain.getMemory().getValue("Leg/Border", new Range(3, 1, 4, 0.5));
-
-  /**
-   * The minimal distance of a new point.
-   */
-  final static int MINIMAL_MOVEMENT = (int)Brain.getMemory().getValue("Leg/MinMovement", new Range(120, 60, 200, 10) {
-    @Override
-    public boolean setValue(double value, Settings currentSettings) {
-      if (currentSettings.getValue("Leg/MaxMovement", null) >= value) {
-        return super.setValue(value, currentSettings);
-      } else {
-        return false;
-      }
-    }
-  });
-
-  /**
-   * The maximal distance torwards a new point.
-   */
-  final static int MAXIMAL_MOVEMENT = (int)Brain.getMemory().getValue("Leg/MaxMovement", new Range(280, 120, 300, 10) {
-    @Override
-    public boolean setValue(double value, Settings currentSettings) {
-      if (currentSettings.getValue("Leg/MinMovement", null) <= value) {
-        return super.setValue(value, currentSettings);
-      } else {
-        return false;
-      }
-    }
-  });
-
-  /**
    * The number of flightpoints which are to be evaluated.
    */
   final static int FLIGHT_POINTS = 80;
@@ -105,10 +72,10 @@ public class Leg extends Component {
      * Calculates the safety of a position.
      */
     private double calculateDanger(Leg leg) {
-      if (this.getX() < leg.skynet.getWidth() * BORDER_DEFINITION
-          || this.getX() > leg.skynet.getBattleFieldWidth() - leg.skynet.getWidth() * BORDER_DEFINITION
-          || this.getY() < leg.skynet.getHeight() * BORDER_DEFINITION
-          || this.getY() > leg.skynet.getBattleFieldHeight() - leg.skynet.getHeight() * BORDER_DEFINITION) {
+      if (this.getX() < leg.skynet.getWidth() * leg.BorderDefinition
+          || this.getX() > leg.skynet.getBattleFieldWidth() - leg.skynet.getWidth() * leg.BorderDefinition
+          || this.getY() < leg.skynet.getHeight() * leg.BorderDefinition
+          || this.getY() > leg.skynet.getBattleFieldHeight() - leg.skynet.getHeight() * leg.BorderDefinition) {
         return java.lang.Double.POSITIVE_INFINITY;
       }
 
@@ -126,6 +93,21 @@ public class Leg extends Component {
     }
   }
 
+  /**
+  * The definition of a suitable distance towards a border.
+  */
+  public final double BorderDefinition;
+
+  /**
+   * The minimal distance of a new point.
+   */
+  public final int MinimalMovement;
+
+  /**
+   * The maximal distance torwards a new point.
+   */
+  public final int MaximalMovement;
+
   private boolean m_isMoving;
   private FlightPoint[] m_flightPoints;
   private FlightPoint m_lastFlightpoint;
@@ -138,6 +120,30 @@ public class Leg extends Component {
 
     this.m_isMoving = false;
     this.m_flightPoints = new FlightPoint[FLIGHT_POINTS];
+
+    this.MaximalMovement = (int)skynet.getBrain().accessMemory("Leg/MaxMovement", new Range(120, 120, 300, 10) {
+      @Override
+      public boolean setValue(double value, Memory<Parameter> currentMemory) {
+        if (currentMemory.getValue("Leg/MinMovement", null).getValue() <= value) {
+          return super.setValue(value, currentMemory);
+        } else {
+          return false;
+        }
+      }
+    });
+
+    this.MinimalMovement = (int)skynet.getBrain().accessMemory("Leg/MinMovement", new Range(50, 60, 200, 10) {
+      @Override
+      public boolean setValue(double value, Memory<Parameter> currentMemory) {
+        if (currentMemory.getValue("Leg/MaxMovement", null).getValue() >= value) {
+          return super.setValue(value, currentMemory);
+        } else {
+          return false;
+        }
+      }
+    });
+
+    this.BorderDefinition = skynet.getBrain().accessMemory("Leg/Border", new Range(3, 1, 4, 0.5));
   }
 
   /**
@@ -146,7 +152,7 @@ public class Leg extends Component {
   public void flight() {
     final double STEP = (2 * Math.PI) / FLIGHT_POINTS;
     for (int i = 0; i < FLIGHT_POINTS; i++) {
-      int distance = Utils.getRandom().nextInt(MAXIMAL_MOVEMENT - MINIMAL_MOVEMENT) + MINIMAL_MOVEMENT;
+      int distance = Utils.getRandom().nextInt(this.MaximalMovement - this.MinimalMovement) + this.MinimalMovement;
       this.m_flightPoints[i] = new FlightPoint(this, STEP / 2 + i * STEP, distance);
     }
 

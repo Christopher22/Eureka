@@ -45,11 +45,6 @@ public class Eye extends Component {
 	 */
 	public static class RobotNearby implements Event {
 
-		/**
-		 * The threshold in which a robot is classified as "nearby".
-		 */
-		public final static int THRESHOLD = (int)Brain.getMemory().getValue("Eye/NearbyThreshold", new Range(100, 50, 200, 10));
-
 		private Enemy m_robot;
 
 		/**
@@ -131,6 +126,11 @@ public class Eye extends Component {
 		}
 	}
 
+	/**
+	* The threshold in which a robot is classified as "nearby".
+	*/
+	public final int Threshold;
+
 	private HashMap<String, Enemy> m_enemies;
 
 	/**
@@ -139,7 +139,9 @@ public class Eye extends Component {
 	public Eye(Skynet skynet) {
 		super(skynet);
 		this.skynet.setAdjustRadarForRobotTurn(true);
+		//this.skynet.setAdjustRadarForGunTurn(false);
 
+		this.Threshold = (int)skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(100, 50, 200, 10));
 		this.m_enemies = new HashMap<String, Enemy>();
 	}
 
@@ -160,7 +162,7 @@ public class Eye extends Component {
 				this.m_enemies.put(enemy.getName(), e);
 			}
 
-			if (e.lastContact().getDistance() < RobotNearby.THRESHOLD) {
+			if (e.lastContact().getDistance() < this.Threshold) {
 				this.setChanged();
 				this.notifyObservers(new RobotNearby(e));
 			}
@@ -178,12 +180,12 @@ public class Eye extends Component {
 	public double getHeading() {
 		return this.skynet.getRadarHeading();
 	}
-	
+
 	/**
 	 * Scans for other robots.
 	 */
 	public void scan(boolean blocking) {
-		if(blocking) {
+		if (blocking) {
 			this.skynet.setTurnRadarLeft(360);
 			this.skynet.waitFor(new robocode.RadarTurnCompleteCondition(this.skynet));
 			this.skynet.execute();
@@ -203,8 +205,9 @@ public class Eye extends Component {
 	@Override
 	public void drawDebug(Graphics2D g) {
 		g.setColor(java.awt.Color.GREEN);
-		for (Enemy enemy :this.getCurrentEnemies()) {
-			g.fillOval((int) enemy.lastContact().getAbsolutPosition().getX() - 8, (int) enemy.lastContact().getAbsolutPosition().getY() - 8, 8, 8);
+		for (Enemy enemy : this.getCurrentEnemies()) {
+			g.fillOval((int) enemy.lastContact().getAbsolutPosition().getX() - 8,
+					(int) enemy.lastContact().getAbsolutPosition().getY() - 8, 8, 8);
 		}
 	}
 }

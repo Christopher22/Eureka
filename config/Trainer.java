@@ -12,15 +12,15 @@ import robocode.control.events.*;
 public class Trainer {
     public static String TRAINING_FILENAME = "training.ser";
 
-    private static int optimalScore;
-    private static Settings optimalSettings;
+    /*private static int optimalScore;
+    private static Memory<Parameter> optimalMemory;
 
     public static class TrainingResult {
-        private final Settings m_optimal;
+        private final Memory<Parameter> m_optimal;
         private final int m_score;
 
-        public TrainingResult(final Settings settings, final int score) {
-            this.m_optimal = settings;
+        public TrainingResult(final Memory<Parameter> Memory, final int score) {
+            this.m_optimal = Memory;
             this.m_score = score;
         }
 
@@ -28,19 +28,19 @@ public class Trainer {
             return this.m_score;
         }
 
-        public Settings getOptimalSettings() {
+        public Memory getOptimalMemory() {
             return this.m_optimal;
         }
     }
 
-    public static TrainingResult optimize(final String robocodeDir, final Settings defaultSettings, final int rounds,
+    public static TrainingResult optimize(final String robocodeDir, final Memory<Parameter> defaultMemory, final int rounds,
             final BattlefieldSpecification battlefield, final String robotName, final String enemyNames) {
 
-        Trainer.optimalSettings = null;
+        Trainer.optimalMemory = null;
         Trainer.optimalScore = 0;
 
         // Generate all possible values and assign labels to them
-        final Map<String, Parameter> parameterMap = defaultSettings.getMap();
+        final Map<String, Parameter> parameterMap = defaultMemory.getMap();
         String[] parameters = new String[parameterMap.size()];
         final List<List<Double>> parameterValues = generateAllParameter(parameterMap, parameters);
 
@@ -60,16 +60,16 @@ public class Trainer {
         // Generate all valid parameter permutations
         permute(parameterValues, (permutation -> {
 
-            // Create and save new settings
-            Settings newSettings = new Settings(defaultSettings);
+            // Create and save new Memory
+            Memory<Parameter> newMemory = new Memory<Parameter>(defaultMemory);
             for (int i = 0; i < permutation.size(); i++) {
-                if (!newSettings.setValue(parameters[i], permutation.get(i))) {
+                if(!newMemory.getMap().get(parameters[i]).setValue(permutation.get(i), newMemory)) {
                     return;
                 }
             }
 
             try {
-                newSettings.save(trainingFile);
+                newMemory.save(trainingFile);
             } catch (Exception ex) {
                 System.err.println("Could not write training file");
                 return;
@@ -82,7 +82,7 @@ public class Trainer {
                     int score = (event.getIndexedResults()[robotId]).getScore();
                     if (score > Trainer.optimalScore) {
                         Trainer.optimalScore = score;
-                        Trainer.optimalSettings = newSettings;
+                        Trainer.optimalMemory = newMemory;
                     }
                 }
             };
@@ -93,10 +93,10 @@ public class Trainer {
             engine.removeBattleListener(listener);
         }));
 
-        // Update optimal settings and clean up
+        // Update optimal Memory and clean up
         engine.close();
 
-        return new TrainingResult(Trainer.optimalSettings, Trainer.optimalScore);
+        return new TrainingResult(Trainer.optimalMemory, Trainer.optimalScore);
     }
 
     private static File createDataFilePath(RobotSpecification robot, String filename) {
@@ -107,11 +107,11 @@ public class Trainer {
         return new File(dataFolder, filename);
     }
 
-    private static List<List<Double>> generateAllParameter(Map<String, Parameter> settings, String[] labels) {
-        List<List<Double>> parameterValues = new ArrayList<>(settings.size());
+    private static List<List<Double>> generateAllParameter(Map<String, Parameter> Memory, String[] labels) {
+        List<List<Double>> parameterValues = new ArrayList<>(Memory.size());
         int parameterIndex = 0;
 
-        for (Map.Entry<String, Parameter> entry : settings.entrySet()) {
+        for (Map.Entry<String, Parameter> entry : Memory.entrySet()) {
             // Ignore constants
             if (entry.getValue() instanceof Range) {
                 Range range = (Range) entry.getValue();
@@ -127,13 +127,13 @@ public class Trainer {
 
         }
         return parameterValues;
-    }
+    }*/
 
     /**
      * Creates all permutations of an list of lists.
      * Adapted from https://stackoverflow.com/questions/29172066/generate-all-permutations-of-several-lists-in-java by "dhke"
      */
-    private static <T> void permute(final List<List<T>> lists, final Consumer<List<T>> consumer) {
+    /*private static <T> void permute(final List<List<T>> lists, final Consumer<List<T>> consumer) {
         final int[] index_pos = new int[lists.size()];
 
         final int last_index = lists.size() - 1;
@@ -152,12 +152,11 @@ public class Trainer {
             for (int i = 0; i < lists.size(); ++i) {
                 ++index_pos[i];
                 if (index_pos[i] < lists.get(i).size()) {
-                    /* stop at first element without overflow */
                     break;
                 } else if (i < last_index) {
                     index_pos[i] = 0;
                 }
             }
         }
-    }
+    }*/
 }

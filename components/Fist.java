@@ -34,11 +34,11 @@ public class Fist extends Component {
         };
     }
 
-    final static double POWER_CONSTANT = Brain.getMemory().getValue("Fist/PowerConstant", new Range(500, 400, 600, 50));
+    public final double PowerConstant;
 
-    final static long TICK_RANGE = 20;
-    final static int ITERATIONS = 15;
-    final static double ACCURACY = 0.01d;
+    public final static long TICK_RANGE = 20;
+    public final static int ITERATIONS = 15;
+    public final static double ACCURACY = 0.01d;
     
     private Enemy m_currentTarget;
     private double m_firePower;
@@ -50,8 +50,10 @@ public class Fist extends Component {
     public Fist(Skynet skynet) {
         super(skynet);
         this.m_currentTarget = null;
+        this.PowerConstant = skynet.getBrain().accessMemory("Fist/PowerConstant", new Range(500, 400, 600, 50));
 
-        this.skynet.setAdjustRadarForGunTurn(false);
+        this.skynet.setAdjustGunForRobotTurn(true);
+        //this.skynet.setAdjustRadarForGunTurn(false);
     }
 
     /**
@@ -60,9 +62,9 @@ public class Fist extends Component {
     public boolean aim(Enemy target) {
         m_currentTarget = target;
 
-        long ct = secant(time(target.lastContact().getDistance()), target);
+        long ct = secant(time(target.lastContact().getDistance(), this.PowerConstant), target, this.PowerConstant);
         Point2D.Double p = target.predictPosition(ct);
-        this.m_firePower = calculateFirePower(HelperFunctions.range(this.skynet.getPosition(), p));
+        this.m_firePower = calculateFirePower(HelperFunctions.range(this.skynet.getPosition(), p), this.PowerConstant);
         double calculatedBearing = HelperFunctions.bearing(this.skynet.getPosition(), p) - this.skynet.getHeadingRadians();
         double turnGun = Utils.normalRelativeAngle(this.skynet.getHeadingRadians() - this.skynet.getGunHeadingRadians() + calculatedBearing);
 
@@ -78,16 +80,16 @@ public class Fist extends Component {
         return true;
     }
 
-    private long secant(long time, Enemy e) {
+    private long secant(long time, Enemy e, double powerConstant) {
         double t0 = time - (TICK_RANGE / 2);
         double t1 = time + (TICK_RANGE / 2);
         double X = t1;
         double lastX = t0;
         int iterationCount = 0;
-        double lastfX = f(Math.round(t0), e);
+        double lastfX = f(Math.round(t0), e, powerConstant);
         while ((Math.abs(X - lastX) >= ACCURACY) && (iterationCount < ITERATIONS)) {
             iterationCount++;
-            double fX = f(Math.round(X), e);
+            double fX = f(Math.round(X), e, powerConstant);
             if ((fX - lastfX) == 0.0)
                 break;
             long nextX = (long) (X - fX * (X - lastX) / (fX - lastfX));
@@ -98,22 +100,22 @@ public class Fist extends Component {
         return Math.round(X);
     }
 
-    private static double calculateFirePower(double distance) {
-        return Math.min(POWER_CONSTANT / distance, robocode.Rules.MAX_BULLET_POWER);
+    private static double calculateFirePower(double distance, double powerConstant) {
+        return Math.min(powerConstant / distance, robocode.Rules.MAX_BULLET_POWER);
     }
 
     private static double calculateBulletVelocity(double power) {
         return 20 - robocode.Rules.MAX_BULLET_POWER * power;
     }
 
-    private static long time(double distance) {
-        return (long) (distance / calculateBulletVelocity(calculateFirePower(distance)));
+    private static long time(double distance, double powerConstant) {
+        return (long) (distance / calculateBulletVelocity(calculateFirePower(distance, powerConstant)));
     }
 
-    private double f(long time, Enemy e) {
+    private double f(long time, Enemy e, double powerConstant) {
         Point2D.Double d = e.predictPosition(time);
         double r = HelperFunctions.range(this.skynet.getPosition(), d);
-        return r - calculateBulletVelocity(calculateFirePower(r)) * time;
+        return r - calculateBulletVelocity(calculateFirePower(r, powerConstant)) * time;
     }
 
     public double getHeading() {

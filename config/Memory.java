@@ -6,31 +6,31 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class Settings {
-    private TreeMap<String, Parameter> m_config;
+public class Memory<Data extends Serializable> {
+    private TreeMap<String, Data> m_config;
 
-    public Settings() {
-        this.m_config = new TreeMap<>();
+    public Memory() {
+        this.m_config = new TreeMap<String, Data>();
     }
 
     @SuppressWarnings("unchecked")
-    public Settings(Settings settings) {
-        this.m_config = (TreeMap<String, Parameter>) settings.m_config.clone();
+    public Memory(Memory<Data> memory) {
+        this.m_config = (TreeMap<String, Data>) memory.m_config.clone();
     }
 
     @SuppressWarnings("unchecked")
-    public Settings(File path) throws IllegalArgumentException {
+    public Memory(File path) throws IllegalArgumentException {
         try (FileInputStream fis = new FileInputStream(path); ObjectInputStream ois = new ObjectInputStream(fis)) {
-            this.m_config = (TreeMap<String, Parameter>) ois.readObject();
+            this.m_config = (TreeMap<String, Data>) ois.readObject();
         } catch (Exception e) {
             throw new IllegalArgumentException("Loading failed");
         }
     }
 
-    public static Settings load(File file) {
+    public static <Data extends Serializable> Memory<Data> load(File file) {
         if (file.isFile()) {
             try {
-                return new Settings(file);
+                return new Memory<Data>(file);
             } catch (Exception ex) {
                 return null;
             }
@@ -48,24 +48,24 @@ public class Settings {
         }
     }
 
-    public boolean setValue(String name, double value) {
-        return this.m_config.get(name).setValue(value, this);
-    }
-
-    public double getValue(String name, Parameter defaultParameter) {
-        Parameter value = this.m_config.get(name);
+    public Data getValue(String name, Data defaultData) {
+        Data value = this.m_config.get(name);
         if (value == null) {
-            if(defaultParameter == null) {
-                throw new IllegalArgumentException("DefaultParameter was null");
+            if(defaultData == null) {
+                throw new IllegalArgumentException("DefaultData was null");
             }
-            this.m_config.put(name, defaultParameter);
-            return defaultParameter.getValue();
+            this.m_config.put(name, defaultData);
+            return defaultData;
         } else {
-            return value.getValue();
+            return value;
         }
     }
 
-    Map<String, Parameter> getMap() {
+    public Data setValue(String name, Data defaultData) {
+        return this.m_config.put(name, defaultData);
+    }
+
+    Map<String, Data> getMap() {
         return this.m_config;
     }
 }

@@ -11,6 +11,7 @@ public class Range implements Parameter, Serializable, Cloneable {
         if (value >= max && value <= min) {
             throw new IndexOutOfBoundsException();
         }
+        this.m_value = value;
         this.m_min = min;
         this.m_max = max;
         this.m_steps = steps;
@@ -32,7 +33,7 @@ public class Range implements Parameter, Serializable, Cloneable {
         return this.m_steps;
     }
 
-    public boolean setValue(double newValue, Settings currentSettings) {
+    public boolean setValue(double newValue, Memory<Parameter> currentMemory) {
         if (newValue < this.m_max && newValue > this.m_min) {
             this.m_value = newValue;
             return true;

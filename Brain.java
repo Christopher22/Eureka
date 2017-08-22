@@ -10,32 +10,25 @@ import skynet.config.*;
 
 public class Brain extends Observable implements Observer {
     private Skynet m_skynet;
-    private static Settings m_memory;
-    private static boolean m_isTraining;
-
-    static {
-        try {
-            if ((Brain.m_memory = Settings.load(new File(Trainer.TRAINING_FILENAME))) != null) {
-                Brain.m_isTraining = true;
-            } else {
-                Brain.m_memory = new Settings();
-                Brain.m_isTraining = false;
-            }
-        } catch (Exception e) {
-            throw new java.lang.ExceptionInInitializerError(e);
-        }
-    }
+    private Memory<Parameter> m_memory;
+    private boolean m_isTraining;
 
     public Brain(Skynet skynet) {
         this.m_skynet = skynet;
+        if ((this.m_memory = Memory.load(new File(skynet.getDataDirectory(), Trainer.TRAINING_FILENAME))) != null) {
+            this.m_isTraining = true;
+        } else {
+            this.m_memory = new Memory<Parameter>();
+            this.m_isTraining = false;
+        }
     }
 
-    public static Settings getMemory() {
-        return Brain.m_memory;
+    public double accessMemory(String name, Parameter defaultParameter) {
+        return this.m_memory.getValue(name, defaultParameter).getValue();
     }
 
-    public static boolean isTraining() {
-        return Brain.m_isTraining;
+    public boolean isTraining() {
+        return this.m_isTraining;
     }
 
     public void life() {
