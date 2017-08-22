@@ -16,12 +16,14 @@ public class Enemy {
     private double velocity;
     private Point2D.Double m_position;
     private double m_heading;
+    private double m_bearing;
 
     public Contact(Skynet skynet, ScannedRobotEvent enemy) {
       this.time = skynet.getTime();
       this.energy = enemy.getEnergy();
       this.velocity = enemy.getVelocity();
       this.m_heading = enemy.getHeading();
+      this.m_bearing = enemy.getBearing();
 
       double angle = Math.toRadians((skynet.getHeading() + enemy.getBearing()) % 360);
       m_position = new Point2D.Double(skynet.getX() + Math.sin(angle) * enemy.getDistance(), skynet.getY() + Math.cos(angle) * enemy.getDistance());
@@ -45,6 +47,10 @@ public class Enemy {
       return this.velocity;
     }
 
+    public double getBearing() {
+      return this.m_bearing;
+    }
+    
     public Point2D.Double getAbsolutPosition() {
       return this.m_position;
     }
