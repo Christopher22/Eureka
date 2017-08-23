@@ -38,6 +38,8 @@ public class Leg extends Component {
 
     private double m_danger, m_radians;
 
+    public final static double PI_ENVIRONMENT = Math.PI / 9.0;
+
     /**
      * Creates a new flypoint.
      */
@@ -80,6 +82,15 @@ public class Leg extends Component {
           || this.getY() > leg.skynet.getBattleFieldHeight() - leg.skynet.getHeight() * leg.BorderDefinition) {
         return java.lang.Double.POSITIVE_INFINITY;
       }
+
+      double bearingToRobot = HelperFunctions.bearing(leg.skynet, this);
+      if (bearingToRobot < PI_ENVIRONMENT || 2 * Math.PI - bearingToRobot < PI_ENVIRONMENT
+          || (bearingToRobot > Math.PI - PI_ENVIRONMENT && bearingToRobot < Math.PI + PI_ENVIRONMENT)) {
+        return java.lang.Double.POSITIVE_INFINITY;
+      }
+      /*if ((bearingToRobot > -PI_ENVIRONMENT && bearingToRobot < PI_ENVIRONMENT) || ) {
+        
+      }*/
 
       final Point2D.Double ownPos = leg.skynet.getPosition();
       double result = 0.08 / (leg.m_lastFlightpoint != null ? this.distanceSq(leg.m_lastFlightpoint) : 1);
@@ -135,7 +146,7 @@ public class Leg extends Component {
     this.m_isMoving = false;
     this.m_flightPoints = new FlightPoint[FLIGHT_POINTS];
 
-    this.MaximalMovement = (int) skynet.getBrain().accessMemory("Leg/MaxMovement", new Range(120, 120, 300, 10) {
+    this.MaximalMovement = (int) skynet.getBrain().accessMemory("Leg/MaxMovement", new Range(180, 120, 300, 10) {
       @Override
       public boolean setValue(double value, Memory<Parameter> currentMemory) {
         if (currentMemory.getValue("Leg/MinMovement", null).getValue() <= value) {
@@ -146,7 +157,7 @@ public class Leg extends Component {
       }
     });
 
-    this.MinimalMovement = (int) skynet.getBrain().accessMemory("Leg/MinMovement", new Range(50, 60, 200, 10) {
+    this.MinimalMovement = (int) skynet.getBrain().accessMemory("Leg/MinMovement", new Range(80, 60, 200, 10) {
       @Override
       public boolean setValue(double value, Memory<Parameter> currentMemory) {
         if (currentMemory.getValue("Leg/MaxMovement", null).getValue() >= value) {
