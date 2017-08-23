@@ -343,8 +343,7 @@ public class Eye extends Component {
 	public void drawDebug(Graphics2D g) {
 		g.setColor(java.awt.Color.GREEN);
 		for (Enemy enemy : this.getCurrentEnemies()) {
-			g.fillOval((int) enemy.lastContact().getAbsolutPosition().getX() - 8,
-					(int) enemy.lastContact().getAbsolutPosition().getY() - 8, 8, 8);
+			g.fillOval((int) enemy.lastContact().getX() - 8, (int) enemy.lastContact().getY() - 8, 8, 8);
 		}
 	}
 }

@@ -17,12 +17,11 @@ public class Enemy {
   /**
   * The state of an enemy in a specific point in time.
   */
-  public class Contact {
-    private long time;
-    private double energy;
+  public class Contact extends Point2D.Double {
+    private long m_time;
+    private double m_energy;
     private double m_distance;
-    private double velocity;
-    private Point2D.Double m_position;
+    private double m_velocity;
     private double m_heading;
     private double m_bearing;
 
@@ -32,17 +31,18 @@ public class Enemy {
      * @param enemy The enemy which was found.
      */
     public Contact(final Skynet skynet, final ScannedRobotEvent enemy) {
-      this.time = skynet.getTime();
-      this.energy = enemy.getEnergy();
-      this.velocity = enemy.getVelocity();
+      super(
+          skynet.getX()
+              + Math.sin(Math.toRadians((skynet.getHeading() + enemy.getBearing()) % 360)) * enemy.getDistance(),
+          skynet.getY()
+              + Math.cos(Math.toRadians((skynet.getHeading() + enemy.getBearing()) % 360)) * enemy.getDistance());
+
+      this.m_time = skynet.getTime();
+      this.m_energy = enemy.getEnergy();
+      this.m_velocity = enemy.getVelocity();
       this.m_heading = enemy.getHeading();
       this.m_bearing = enemy.getBearing();
-
-      double angle = Math.toRadians((skynet.getHeading() + enemy.getBearing()) % 360);
-      m_position = new Point2D.Double(skynet.getX() + Math.sin(angle) * enemy.getDistance(),
-          skynet.getY() + Math.cos(angle) * enemy.getDistance());
-
-      this.m_distance = this.m_position.distance(skynet.getX(), skynet.getY());
+      this.m_distance = this.distance(skynet.getX(), skynet.getY());
     }
 
     /**
@@ -58,7 +58,7 @@ public class Enemy {
      * @return the turn.
      */
     public long getTurn() {
-      return this.time;
+      return this.m_time;
     }
 
     /**
@@ -66,7 +66,7 @@ public class Enemy {
      * @return the energy of the enemy.
      */
     public double getEnergy() {
-      return this.energy;
+      return this.m_energy;
     }
 
     /**
@@ -74,7 +74,7 @@ public class Enemy {
     * @return the velocity of the enemy.
     */
     public double getVelocity() {
-      return this.velocity;
+      return this.m_velocity;
     }
 
     /**
@@ -86,14 +86,6 @@ public class Enemy {
     }
 
     /**
-    * Returns the position of the enemy.
-    * @return the position of the enemy.
-    */
-    public Point2D.Double getAbsolutPosition() {
-      return this.m_position;
-    }
-
-    /**
     * Returns the distance to the enemy.
     * @return the distance to the enemy.
     */
@@ -102,16 +94,16 @@ public class Enemy {
     }
   }
 
-  private String name;
-  private ArrayDeque<Contact> events;
+  private String m_name;
+  private ArrayDeque<Contact> m_events;
   private Integer m_dead;
 
   /**
    * Creates a new enemy from a 'ScannedRobotEvent'.
    */
   public Enemy(final Skynet skynet, final ScannedRobotEvent enemy) {
-    this.name = enemy.getName();
-    this.events = new ArrayDeque<Contact>();
+    this.m_name = enemy.getName();
+    this.m_events = new ArrayDeque<Contact>();
     this.m_dead = null;
 
     this.addContact(skynet, enemy);
@@ -123,11 +115,11 @@ public class Enemy {
    * @param enemy The enemy.
    */
   public void addContact(Skynet skynet, ScannedRobotEvent enemy) {
-    if (!enemy.getName().equals(this.name)) {
-      throw new RuntimeException("Name different");
+    if (!enemy.getName().equals(this.m_name)) {
+      throw new IllegalArgumentException("Name different");
     }
 
-    this.events.push(new Contact(skynet, enemy));
+    this.m_events.push(new Contact(skynet, enemy));
   }
 
   /**
@@ -135,7 +127,7 @@ public class Enemy {
    * @return the last contact or 'null'.
    */
   public Contact lastContact() {
-    return this.events.peekFirst();
+    return this.m_events.peekFirst();
   }
 
   /**
@@ -156,7 +148,7 @@ public class Enemy {
 
   /**
    * Returns the turn the enemy died or 'null' if it is still alive.
-   * @return the time of dead or 'null'
+   * @return the m_time of dead or 'null'
    */
   public Integer getDeadTurn() {
     return this.m_dead;
@@ -175,7 +167,7 @@ public class Enemy {
    * @return the id of the enemy.
    */
   public String getName() {
-    return this.name;
+    return this.m_name;
   }
 
   /**
@@ -183,8 +175,8 @@ public class Enemy {
    * @return the name of the enemy.
    */
   public String getBaseName() {
-    final int index = this.name.lastIndexOf('(');
-    return index > 0 ? this.name.substring(0, index - 1).trim() : this.name;
+    final int index = this.m_name.lastIndexOf('(');
+    return index > 0 ? this.m_name.substring(0, index - 1).trim() : this.m_name;
   }
 
   /**
@@ -197,8 +189,8 @@ public class Enemy {
 
     final double ax = last.getVelocity() * Math.sin(last.getHeading());
     final double ay = last.getVelocity() * Math.cos(last.getHeading());
-    final double bx = (last.getAbsolutPosition().getX()) - (ax * last.getTurn());
-    final double by = (last.getAbsolutPosition().getY()) - (ay * last.getTurn());
+    final double bx = (last.getX()) - (ax * last.getTurn());
+    final double by = (last.getY()) - (ay * last.getTurn());
     final long t = last.getTurn() + turn;
 
     return new Point2D.Double(ax * t + bx, ay * t + by);

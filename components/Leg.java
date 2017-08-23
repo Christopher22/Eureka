@@ -103,10 +103,10 @@ public class Leg extends Component {
 
       // Calculate the danger for enemies around
       for (Enemy e : leg.skynet.getEye().getCurrentEnemies()) {
-        Point2D.Double enemyPos = e.lastContact().getAbsolutPosition();
         result += e.getDanger()
-            * (1 + Math.abs(Math.cos(HelperFunctions.bearing(ownPos, this) - HelperFunctions.bearing(enemyPos, this))))
-            / this.distance(enemyPos);
+            * (1 + Math
+                .abs(Math.cos(HelperFunctions.bearing(ownPos, this) - HelperFunctions.bearing(e.lastContact(), this))))
+            / this.distance(e.lastContact());
       }
 
       return result;
