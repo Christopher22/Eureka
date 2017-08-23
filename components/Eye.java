@@ -163,7 +163,7 @@ public class Eye extends Component {
 		super(skynet);
 		this.skynet.setAdjustRadarForRobotTurn(true);
 
-		this.Threshold = (int) skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(150, 100, 300, 10));
+		this.Threshold = (int) skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(200, 100, 300, 10));
 
 		this.m_enemies = new HashMap<String, Enemy>();
 		this.m_isTurningComplete = true;
@@ -200,6 +200,9 @@ public class Eye extends Component {
 	protected void handleCommand(Signal.Command command) {
 		if (command instanceof Brain.Scan) {
 			this.scan();
+		} else if (command instanceof Brain.Attack) {
+			Enemy e = ((Brain.Attack) command).getEnemy();
+			this.turnTo(this.skynet.getHeading() - this.skynet.getRadarHeading() + e.lastContact().getBearing());
 		}
 	}
 
@@ -218,16 +221,16 @@ public class Eye extends Component {
 	/**
 	 * Scans for other robots.
 	 */
-	private void scan() {
+	protected void scan() {
 		if (m_isTurningComplete || Utils.getRandom().nextInt(3) == 2) {
-			this.skynet.setTurnRadarRight(360);
+			this.turnTo(360);
 		} else {
 			// Highly modified version from https://www.ibm.com/developerworks/library/j-radar/index.html
 			double maxBearingAbs = 0, maxBearing = 0;
 			int scannedBots = 0;
 			for (Enemy enemy : this.getCurrentEnemies()) {
 				double bearing = Utils.normalRelativeAngle(
-						this.skynet.getHeading() + enemy.lastContact().getBearing() - this.skynet.getRadarHeading());
+						this.skynet.getHeading() - this.skynet.getRadarHeading() + enemy.lastContact().getBearing());
 				if (Math.abs(bearing) > maxBearingAbs) {
 					maxBearingAbs = Math.abs(bearing);
 					maxBearing = bearing;
@@ -239,9 +242,13 @@ public class Eye extends Component {
 			if (scannedBots == this.skynet.getOthers())
 				radarTurn = maxBearing + Math.signum(maxBearing) * 22.5;
 
-			this.skynet.setTurnRadarRight(radarTurn);
 			this.m_direction = this.m_direction.reverse();
+			this.turnTo(radarTurn);
 		}
+	}
+
+	protected void turnTo(double degrees) {
+		this.skynet.setTurnRadarRight(degrees);
 		this.skynet.addCustomEvent(new robocode.RadarTurnCompleteCondition(this.skynet));
 	}
 
