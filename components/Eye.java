@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Observable;
+import java.io.File;
 import java.awt.Graphics2D;
+import java.io.Serializable;
 
 import robocode.util.Utils;
 
@@ -94,7 +96,7 @@ public class Eye extends Component {
 			} else {
 				while (this.m_nextEnemy == null && this.m_enemies.hasNext()) {
 					Enemy e = this.m_enemies.next();
-					if (e.lastContact().getTurn() >= this.m_current - TURN_THRESHOLD) {
+					if (e.isAlive() && e.lastContact().getTurn() >= this.m_current - TURN_THRESHOLD) {
 						this.m_nextEnemy = e;
 						return true;
 					}
@@ -147,12 +149,27 @@ public class Eye extends Component {
 	public static class ScanningComplete implements Signal.Event {
 	}
 
+	private static class EnemyPerformance implements Serializable {
+		private double m_avg, m_number;
+
+		public void addValue(double value) {
+			this.m_avg -= (this.m_avg - value) / ++m_number;
+		}
+
+		public double getAverage() {
+			return this.m_avg;
+		}
+	}
+
 	/**
 	* The threshold in which a robot is classified as "nearby".
 	*/
 	public final int Threshold;
 
+	public static String ENEMY_FILENAME = "enemy_scores.ser";
+
 	private HashMap<String, Enemy> m_enemies;
+	private Memory<EnemyPerformance> m_performance;
 	private boolean m_isTurningComplete;
 	private Direction m_direction;
 
@@ -166,6 +183,9 @@ public class Eye extends Component {
 		this.Threshold = (int) skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(200, 100, 300, 10));
 
 		this.m_enemies = new HashMap<String, Enemy>();
+		if ((this.m_performance = Memory.load(new File(skynet.getDataDirectory(), Eye.ENEMY_FILENAME))) == null) {
+			m_performance = new Memory<>();
+		}
 		this.m_isTurningComplete = true;
 		this.m_direction = Direction.Left;
 	}
@@ -193,6 +213,21 @@ public class Eye extends Component {
 				this.m_isTurningComplete = false;
 			}
 			this.sendSignal(new ScanningComplete());
+		} else if (event instanceof Skynet.EnemyDied) {
+			Enemy e = this.getEnemy(((Skynet.EnemyDied) event).getEnemy().getName());
+			e.setDeadTurn((int) this.skynet.getTime());
+		} else if (event instanceof Skynet.RoundEnded) {
+			final int turns = ((Skynet.RoundEnded) event).getTurns();
+			for (Enemy e : this.m_enemies.values()) {
+				EnemyPerformance performance = this.m_performance.getValue(e.getBaseName(), new EnemyPerformance());
+				performance.addValue(e.isAlive() ? 1.0d : (e.getDeadTurn() / turns));
+			}
+		} else if (event instanceof Skynet.BattleEnded) {
+			try {
+				this.m_performance.save(new File(skynet.getDataDirectory(), Eye.ENEMY_FILENAME));
+			} catch (Exception ex) {
+				this.skynet.out.println("[ERROR] Saving failed");
+			}
 		}
 	}
 

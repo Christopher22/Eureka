@@ -63,10 +63,13 @@ public class Enemy {
 
   private String name;
   private ArrayDeque<Contact> events;
+  private Integer m_dead;
 
   public Enemy(Skynet skynet, ScannedRobotEvent enemy) {
     this.name = enemy.getName();
     this.events = new ArrayDeque<Contact>();
+    this.m_dead = null;
+
     this.addContact(skynet, enemy);
   }
 
@@ -90,8 +93,25 @@ public class Enemy {
     return this.lastContact().getEnergy() / 50;
   }
 
+  public boolean isAlive() {
+    return this.m_dead == null;
+  }
+
+  public Integer getDeadTurn() {
+    return this.m_dead;
+  }
+
+  public void setDeadTurn(int tick) {
+    this.m_dead = tick;
+  }
+
   public String getName() {
     return this.name;
+  }
+
+  public String getBaseName() {
+    int index = this.name.lastIndexOf('(');
+    return index > 0 ? this.name.substring(0, index - 1).trim() : this.name;
   }
 
   public Point2D.Double predictPosition(long turn) {
