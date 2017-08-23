@@ -26,19 +26,13 @@ public class Brain extends Observable implements Observer {
 
     public static class Attack implements Signal.Command {
         private final Enemy m_target;
-        private final boolean m_interpolate;
 
-        public Attack(final Enemy target, final boolean interpolate) {
+        public Attack(final Enemy target) {
             this.m_target = target;
-            this.m_interpolate = interpolate;
         }
 
         public Enemy getEnemy() {
             return this.m_target;
-        }
-
-        public boolean shouldInterpolate() {
-            return this.m_interpolate;
         }
     }
 
@@ -101,7 +95,7 @@ public class Brain extends Observable implements Observer {
             this.m_skynet.execute();
         } else if (arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
             this.sendSignal(new Brain.Stop());
-            this.sendSignal(new Brain.Attack(((Eye.RobotNearby) arg).getRobot(), true));
+            this.sendSignal(new Brain.Attack(((Eye.RobotNearby) arg).getRobot()));
             this.m_skynet.execute();
         } else if (arg instanceof Eye.ScanningComplete) {
             this.sendSignal(new Brain.Scan());
