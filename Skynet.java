@@ -68,9 +68,9 @@ public class Skynet extends AdvancedRobot {
 		}
 	}
 
-	private Eye eye;
-	private Leg leg;
-	private Fist fist;
+	private Eye m_eye;
+	private Leg m_leg;
+	private Fist m_fist;
 	private Brain m_brain;
 
 	/**
@@ -79,9 +79,9 @@ public class Skynet extends AdvancedRobot {
 	public void run() {
 		this.m_brain = new Brain(this);
 
-		this.eye = new Eye(this);
-		this.leg = new Leg(this);
-		this.fist = new Fist(this);
+		this.m_eye = new Eye(this);
+		this.m_leg = new Leg(this);
+		this.m_fist = new Fist(this);
 
 		this.m_brain.life();
 	}
@@ -96,9 +96,9 @@ public class Skynet extends AdvancedRobot {
 
 	@Override
 	public void onPaint(Graphics2D g) {
-		this.eye.drawDebug(g);
-		this.leg.drawDebug(g);
-		this.fist.drawDebug(g);
+		this.m_eye.drawDebug(g);
+		this.m_leg.drawDebug(g);
+		this.m_fist.drawDebug(g);
 	}
 
 	@Override
@@ -137,7 +137,7 @@ public class Skynet extends AdvancedRobot {
 	 * @return the eye of the robot.
 	 */
 	public Eye getEye() {
-		return this.eye;
+		return this.m_eye;
 	}
 
 	/**
@@ -145,7 +145,7 @@ public class Skynet extends AdvancedRobot {
 	 * @return the leg of the robot.
 	 */
 	public Leg getLeg() {
-		return this.leg;
+		return this.m_leg;
 	}
 
 	/**
@@ -153,7 +153,7 @@ public class Skynet extends AdvancedRobot {
 	 * @return the fist of the robot.
 	 */
 	public Fist getFist() {
-		return this.fist;
+		return this.m_fist;
 	}
 
 	/**
