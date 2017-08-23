@@ -21,7 +21,7 @@ public class Eye extends Component {
 	/**
 	 * An event which is fired when a robot was found on the map.
 	 */
-	public static class RobotFound implements Signal.Event {
+	public static class RobotFound implements Signal.GlobalEvent {
 		private robocode.ScannedRobotEvent m_robot;
 
 		/**
