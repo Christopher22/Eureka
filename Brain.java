@@ -10,51 +10,95 @@ import skynet.components.*;
 import skynet.helper.*;
 import skynet.config.*;
 
+/**
+ * The brain - home of the rational agent.
+ */
 public class Brain extends Observable implements Observer {
-    private Skynet m_skynet;
+    private final Skynet m_skynet;
     private Memory<Parameter> m_memory;
-    private boolean m_isTraining;
+    private final boolean m_isTraining;
 
+    /**
+     * A commando which should result in a non-specified movement on the battlefield.
+     */
     public static class Move implements Signal.Command {
     }
 
+    /**
+     * A commando which should result in a stop of any movement.
+     */
     public static class Stop implements Signal.Command {
     }
 
+    /**
+     * A commando which should result in a non-specified scanning on the battlefield.
+     */
     public static class Scan implements Signal.Command {
     }
 
+    /**
+     * A commando which should result in a attack towards an enemy.
+     */
     public static class Attack implements Signal.Command {
         private final Enemy m_target;
 
+        /**
+         * Creates the attack.
+         * @param target The target of the attack.
+         */
         public Attack(final Enemy target) {
             this.m_target = target;
         }
 
+        /**
+         * Returns the target of the attack.
+         * @return the target of the attack.
+         */
         public Enemy getEnemy() {
             return this.m_target;
         }
     }
 
+    /**
+     * A commando which should result in the fire of a bullet with specified power into a specified direction.
+     */
     public static class Fire implements Signal.Command {
         private final double m_rotation, m_power;
 
+        /**
+         * Creates the new commando.
+         * @param rotation The rotation.
+         * @param power The power of the bullet.
+         */
         public Fire(final double rotation, final double power) {
             this.m_rotation = rotation;
             this.m_power = power;
         }
 
+        /**
+         * Returns the specified direction of the gun.
+         * @return the rotation of the gun.
+         */
         public double getRotation() {
             return this.m_rotation;
         }
 
+        /**
+         * Returns the power of the bullet.
+         * @return the power of the bullet.
+         */
         public double getPower() {
             return this.m_power;
         }
     }
 
-    public Brain(Skynet skynet) {
+    /**
+     * Initialize the new AI.
+     */
+    public Brain(final Skynet skynet) {
         this.m_skynet = skynet;
+
+        // Load training memory, if in training.
         if ((this.m_memory = Memory.load(new File(skynet.getDataDirectory(), Trainer.TRAINING_FILENAME))) != null) {
             this.m_isTraining = true;
         } else {
@@ -63,24 +107,41 @@ public class Brain extends Observable implements Observer {
         }
     }
 
-    public double accessMemory(String name, Parameter defaultParameter) {
+    /**
+     * Access the memory.
+     * @param name The name of the parameter.
+     * @param defaultParameter The parameter which is insert if the key does not exists.
+     * @return the parameter or the default.
+     */
+    public double accessMemory(final String name, final Parameter defaultParameter) {
         return this.m_memory.getValue(name, defaultParameter).getValue();
     }
 
+    /**
+     * Checks if the AI is currently in training.
+     * @return true if in training.
+     */
     public boolean isTraining() {
         return this.m_isTraining;
     }
 
+    /**
+     * Start the AI.
+     */
     public void life() {
         this.sendSignal(new Brain.Scan());
     }
 
-    private void sendSignal(Signal mission) {
-        this.m_skynet.out.format("[%s] %s\n", mission instanceof Signal.Command ? "Command" : "Event",
-                mission.getClass().getSimpleName());
+    /**
+     * Sends a signal towards all parts of the robot.
+     * @param signal The signal which is to be transmitted.
+     */
+    private void sendSignal(final Signal signal) {
+        this.m_skynet.out.format("[%s] %s\n", signal instanceof Signal.Command ? "Command" : "Event",
+                signal.getClass().getSimpleName());
 
         this.setChanged();
-        this.notifyObservers(mission);
+        this.notifyObservers(signal);
     }
 
     @Override
@@ -91,19 +152,23 @@ public class Brain extends Observable implements Observer {
 
         if (((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired))
                 || (arg instanceof Fist.AimAborted) && !this.m_skynet.getFist().isAiming()) {
+            // Move forward after the end of a operation
             this.sendSignal(new Brain.Move());
             this.m_skynet.execute();
         } else if (arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
+            // Attack a robot nearby.
             this.sendSignal(new Brain.Stop());
             this.sendSignal(new Brain.Attack(((Eye.RobotNearby) arg).getRobot()));
             this.m_skynet.execute();
         } else if (arg instanceof Eye.ScanningComplete) {
+            // Continuos scanning after end and move if it was the first one at the beginning.
             this.sendSignal(new Brain.Scan());
             if (!this.m_skynet.getLeg().isMoving()) {
                 this.sendSignal(new Brain.Move());
             }
             this.m_skynet.execute();
         } else if (arg instanceof Leg.RobotHit && !this.m_skynet.getFist().isAiming()) {
+            // Fires in direction of a hitting robot
             this.sendSignal(new Brain.Stop());
             double angle = Utils.normalRelativeAngle(this.m_skynet.getHeadingRadians()
                     - this.m_skynet.getGunHeadingRadians() + ((Leg.RobotHit) arg).getBearing());
@@ -111,6 +176,7 @@ public class Brain extends Observable implements Observer {
             this.m_skynet.execute();
         }
 
+        // Transmit the signal towards the other components.
         this.sendSignal((Signal) arg);
     }
 }

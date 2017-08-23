@@ -6,20 +6,33 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A serizable memory for the storage of data.
+ */
 public class Memory<Data extends Serializable> {
     private TreeMap<String, Data> m_config;
 
+    /**
+     * Creates a new memory.
+     */
     public Memory() {
         this.m_config = new TreeMap<String, Data>();
     }
 
+    /**
+     * Copies an existing memory.
+     */
     @SuppressWarnings("unchecked")
     public Memory(Memory<Data> memory) {
         this.m_config = (TreeMap<String, Data>) memory.m_config.clone();
     }
 
+    /**
+     * Loads the memory from a file.
+     * @param file The path to the file.
+     */
     @SuppressWarnings("unchecked")
-    public Memory(File path) throws IllegalArgumentException {
+    public Memory(final File path) throws IllegalArgumentException {
         try (FileInputStream fis = new FileInputStream(path); ObjectInputStream ois = new ObjectInputStream(fis)) {
             this.m_config = (TreeMap<String, Data>) ois.readObject();
         } catch (Exception e) {
@@ -27,7 +40,13 @@ public class Memory<Data extends Serializable> {
         }
     }
 
-    public static <Data extends Serializable> Memory<Data> load(File file) {
+    /**
+     * Tries to load the memory.
+     * @param file The file which might be loaded.
+     * @return the Model or 'null' on failure.
+     */
+    public static <Data extends Serializable> Memory<Data> load(final File file) {
+        // Check the file exists
         if (file.isFile()) {
             try {
                 return new Memory<Data>(file);
@@ -39,7 +58,11 @@ public class Memory<Data extends Serializable> {
         }
     }
 
-    public void save(File name) throws IOException {
+    /**
+     * Saves the memory on the drive.
+     * @param name The file which might be loaded.
+     */
+    public void save(final File name) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(name, false);
                 ObjectOutputStream oos = new ObjectOutputStream(fos)) {
             oos.writeObject(this.m_config);
@@ -48,12 +71,21 @@ public class Memory<Data extends Serializable> {
         }
     }
 
-    public Data getValue(String name, Data defaultData) {
-        Data value = this.m_config.get(name);
+    /**
+     * Gets the value or a default value, which is instead of insert into the database.
+     * @param name The key of the data which is to be searched.
+     * @param defaultData The data which is to be inserted if there is no existing one.
+     * @return the data or the default value.
+     */
+    public Data getValue(final String name, final Data defaultData) {
+        final Data value = this.m_config.get(name);
+
+        // Checks if value exits...
         if (value == null) {
             if (defaultData == null) {
                 throw new IllegalArgumentException("DefaultData was null");
             }
+            // ... or put in else.
             this.m_config.put(name, defaultData);
             return defaultData;
         } else {
@@ -61,10 +93,20 @@ public class Memory<Data extends Serializable> {
         }
     }
 
-    public Data setValue(String name, Data defaultData) {
-        return this.m_config.put(name, defaultData);
+    /**
+     * Sets a specific value.
+     * @param name The key of the data which is to be searched.
+     * @param data The data which is to be set.
+     * @return the data which is to be replaced.
+     */
+    public Data setValue(final String name, final Data data) {
+        return this.m_config.put(name, data);
     }
 
+    /**
+     * Returns the inner list, only accessable for code in this module.
+     * @return the map.
+     */
     Map<String, Data> getMap() {
         return this.m_config;
     }

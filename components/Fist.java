@@ -23,23 +23,15 @@ public class Fist extends Component {
     public static class BulletFired implements Signal.Event {
     }
 
+    /**
+     * An event which is fired after the aiming had to be aborted.
+     */
     public static class AimAborted implements Signal.Event {
     }
 
-    public static class EyeSynchronized extends robocode.Condition {
-        final Skynet m_skynet;
-
-        public EyeSynchronized(Skynet skynet) {
-            super("EyeSynchronized");
-            this.m_skynet = skynet;
-        }
-
-        @Override
-        public boolean test() {
-            return this.m_skynet.getEye().getHeading() == this.m_skynet.getFist().getHeading();
-        };
-    }
-
+    /**
+     * The power which is used to calculate the power of the bullet over distance.
+     */
     public final double PowerConstant;
 
     public final static long TICK_RANGE = 20;
@@ -50,9 +42,9 @@ public class Fist extends Component {
     private double m_firePower;
 
     /**
-     * Creates a new bullet.
+     * Creates a new fist.
      */
-    public Fist(Skynet skynet) {
+    public Fist(final Skynet skynet) {
         super(skynet);
         this.m_hasTarget = false;
         this.PowerConstant = skynet.getBrain().accessMemory("Fist/PowerConstant", new Range(500, 400, 600, 50));
@@ -62,9 +54,9 @@ public class Fist extends Component {
     }
 
     /**
-     * Aim an enemy.
+     * Aims an enemy.
      */
-    private boolean aim(Enemy target) {
+    private boolean aim(final Enemy target) {
         long ct = secant(time(target.lastContact().getDistance(), this.PowerConstant), target, this.PowerConstant);
         Point2D.Double p = target.predictPosition(ct);
         double calculatedBearing = HelperFunctions.bearing(this.skynet.getPosition(), p)
@@ -76,7 +68,10 @@ public class Fist extends Component {
                 calculateFirePower(HelperFunctions.range(this.skynet.getPosition(), p), this.PowerConstant));
     }
 
-    private boolean aim(double gunRotation, double firePower) {
+    /**
+     * Aims towards a position and prepare firing.
+     */
+    private boolean aim(final double gunRotation, final double firePower) {
         if (this.skynet.getGunHeat() != 0 || firePower < robocode.Rules.MIN_BULLET_POWER) {
             this.m_hasTarget = false;
             return false;
@@ -89,7 +84,7 @@ public class Fist extends Component {
         return true;
     }
 
-    private long secant(long time, Enemy e, double powerConstant) {
+    private long secant(final long time, final Enemy e, final double powerConstant) {
         double t0 = time - (TICK_RANGE / 2);
         double t1 = time + (TICK_RANGE / 2);
         double X = t1;
@@ -109,30 +104,35 @@ public class Fist extends Component {
         return Math.round(X);
     }
 
-    private static double calculateFirePower(double distance, double powerConstant) {
+    private static double calculateFirePower(final double distance, final double powerConstant) {
         return Math.min(powerConstant / distance, robocode.Rules.MAX_BULLET_POWER);
     }
 
-    private static double calculateBulletVelocity(double power) {
+    private static double calculateBulletVelocity(final double power) {
         return 20 - robocode.Rules.MAX_BULLET_POWER * power;
     }
 
-    private static long time(double distance, double powerConstant) {
+    private static long time(final double distance, final double powerConstant) {
         return (long) (distance / calculateBulletVelocity(calculateFirePower(distance, powerConstant)));
     }
 
-    private double f(long time, Enemy e, double powerConstant) {
+    private double f(final long time, final Enemy e, final double powerConstant) {
         Point2D.Double d = e.predictPosition(time);
         double r = HelperFunctions.range(this.skynet.getPosition(), d);
         return r - calculateBulletVelocity(calculateFirePower(r, powerConstant)) * time;
     }
 
+    /**
+     * Returns the heading of the gun.
+     * @return the heading of the gun.
+     */
     public double getHeading() {
         return this.skynet.getGunHeading();
     }
 
     /**
      * Checks if an enemy is aimed in the moment.
+     * @return true if aiming.
      */
     public boolean isAiming() {
         return this.m_hasTarget;

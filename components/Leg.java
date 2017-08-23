@@ -1,12 +1,12 @@
 package skynet.components;
 
-import robocode.util.Utils;
-
 import java.awt.geom.Point2D;
 import java.util.Arrays;
 import java.util.Observable;
 import java.util.Collections;
 import java.awt.Graphics2D;
+
+import robocode.util.Utils;
 
 import skynet.Skynet;
 import skynet.Brain;
@@ -36,14 +36,17 @@ public class Leg extends Component {
    */
   public static class FlightPoint extends Point2D.Double implements Comparable<FlightPoint> {
 
-    private double m_danger, m_radians;
+    private final double m_danger, m_radians;
 
+    /**
+     * The area which will be highly dangerous because they allows easy prediction of own movement.
+     */
     public final static double PI_ENVIRONMENT = Math.PI / 9.0;
 
     /**
      * Creates a new flypoint.
      */
-    public FlightPoint(Leg leg, double radians, int distance) {
+    public FlightPoint(final Leg leg, final double radians, final int distance) {
       super(leg.skynet.getX() + distance * Math.cos(radians), leg.skynet.getY() + distance * Math.sin(radians));
       this.m_radians = radians;
       this.m_danger = this.calculateDanger(leg);
@@ -68,14 +71,16 @@ public class Leg extends Component {
     /**
      * Compares a flypoint to another in terms of danger.
      */
-    public int compareTo(FlightPoint o) {
+    public int compareTo(final FlightPoint o) {
       return (int) (this.m_danger - o.m_danger);
     }
 
     /**
      * Calculates the safety of a position.
      */
-    private double calculateDanger(Leg leg) {
+    private double calculateDanger(final Leg leg) {
+
+      // Checks if the flightpoint is outside the battlefield.
       if (this.getX() < leg.skynet.getWidth() * leg.BorderDefinition
           || this.getX() > leg.skynet.getBattleFieldWidth() - leg.skynet.getWidth() * leg.BorderDefinition
           || this.getY() < leg.skynet.getHeight() * leg.BorderDefinition
@@ -83,18 +88,20 @@ public class Leg extends Component {
         return java.lang.Double.POSITIVE_INFINITY;
       }
 
+      // Mark position linear from the current movement as dangerous
       double bearingToRobot = HelperFunctions.bearing(leg.skynet, this);
       if (bearingToRobot < PI_ENVIRONMENT || 2 * Math.PI - bearingToRobot < PI_ENVIRONMENT
           || (bearingToRobot > Math.PI - PI_ENVIRONMENT && bearingToRobot < Math.PI + PI_ENVIRONMENT)) {
         return java.lang.Double.POSITIVE_INFINITY;
       }
-      /*if ((bearingToRobot > -PI_ENVIRONMENT && bearingToRobot < PI_ENVIRONMENT) || ) {
-        
-      }*/
 
+      // Cache the position of the robot
       final Point2D.Double ownPos = leg.skynet.getPosition();
+
+      // Mark points nearby on the old position as dangerous
       double result = 0.08 / (leg.m_lastFlightpoint != null ? this.distanceSq(leg.m_lastFlightpoint) : 1);
 
+      // Calculate the danger for enemies around
       for (Enemy e : leg.skynet.getEye().getCurrentEnemies()) {
         Point2D.Double enemyPos = e.lastContact().getAbsolutPosition();
         result += e.getDanger()
@@ -106,13 +113,24 @@ public class Leg extends Component {
     }
   }
 
+  /**
+   * A event which is fired if this robot touches another.
+   */
   public static class RobotHit implements Signal.GlobalEvent {
     private robocode.HitRobotEvent m_hit;
 
+    /**
+     * Creates a new event.
+     * @param hit The hit.
+     */
     public RobotHit(robocode.HitRobotEvent hit) {
       this.m_hit = hit;
     }
 
+    /**
+     * Returns the bearing of the hit.
+     * @return the bearing of the hit.
+     */
     public double getBearing() {
       return this.m_hit.getBearingRadians();
     }
@@ -140,12 +158,13 @@ public class Leg extends Component {
   /**
    * Creates a new leg.
    */
-  public Leg(Skynet skynet) {
+  public Leg(final Skynet skynet) {
     super(skynet);
 
     this.m_isMoving = false;
     this.m_flightPoints = new FlightPoint[FLIGHT_POINTS];
 
+    // Loads the maximal movement - and check that it is bigger than the minimal movement.
     this.MaximalMovement = (int) skynet.getBrain().accessMemory("Leg/MaxMovement", new Range(180, 120, 300, 10) {
       @Override
       public boolean setValue(double value, Memory<Parameter> currentMemory) {
@@ -157,6 +176,7 @@ public class Leg extends Component {
       }
     });
 
+    // Loads the minimal movement - and check that it is bigger than the maximal movement.
     this.MinimalMovement = (int) skynet.getBrain().accessMemory("Leg/MinMovement", new Range(80, 60, 200, 10) {
       @Override
       public boolean setValue(double value, Memory<Parameter> currentMemory) {
@@ -181,6 +201,7 @@ public class Leg extends Component {
       this.m_flightPoints[i] = new FlightPoint(this, STEP / 2 + i * STEP, distance);
     }
 
+    // Find the point with minimal danger
     FlightPoint min = Collections.min(Arrays.asList(this.m_flightPoints));
     this.move(min);
   }

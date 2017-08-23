@@ -16,7 +16,7 @@ import skynet.helper.*;
 import skynet.config.*;
 
 /**
- * The eye - tracks mutiple enemies and scan the environment.
+ * The eye - tracks multiple enemies, calculates their danger and scans the environment.
  */
 public class Eye extends Component {
 
@@ -24,12 +24,13 @@ public class Eye extends Component {
 	 * An event which is fired when a robot was found on the map.
 	 */
 	public static class RobotFound implements Signal.GlobalEvent {
-		private robocode.ScannedRobotEvent m_robot;
+		private final robocode.ScannedRobotEvent m_robot;
 
 		/**
 		 * Constructs a new event from a 'ScannedRobotEvent'.
+		 * @param robot The robot found.
 		 */
-		public RobotFound(robocode.ScannedRobotEvent robot) {
+		public RobotFound(final robocode.ScannedRobotEvent robot) {
 			this.m_robot = robot;
 		}
 
@@ -47,25 +48,26 @@ public class Eye extends Component {
 	 */
 	public static class RobotNearby implements Signal.Event {
 
-		private Enemy m_robot;
+		private final Enemy m_robot;
 
 		/**
 		 * Constructs a new event.
+		 * @param robot The robot nearby.
 		 */
-		public RobotNearby(Enemy robot) {
+		public RobotNearby(final Enemy robot) {
 			this.m_robot = robot;
 		}
 
 		/** 
 		 * Returns the robot nearby.
-		 * @return The nearby robot.
+		 * @return the nearby robot.
 		*/
 		public Enemy getRobot() {
 			return this.m_robot;
 		}
 	}
 
-	/**ary
+	/**
 	 * An iterator over all the enemies with more or less up-to-date information.
 	 */
 	public class CurrentEnemyIterator implements Iterator<Enemy>, Iterable<Enemy> {
@@ -77,17 +79,20 @@ public class Eye extends Component {
 
 		private Iterator<Enemy> m_enemies;
 		private Enemy m_nextEnemy;
-		private long m_current;
+		private final long m_current;
 
 		/**
 		 * Creates the iterator.
+		 * @param enemies A list of possible enemies.
+		 * @param currentTurn The current turn.
 		 */
-		protected CurrentEnemyIterator(Iterator<Enemy> enemies, long currentTurn) {
+		protected CurrentEnemyIterator(final Iterator<Enemy> enemies, final long currentTurn) {
 			this.m_enemies = enemies;
+			this.m_current = currentTurn;
 		}
 
 		/**
-		 * Check for next element.
+		 * Checks for next element.
 		 * @return True, if there is still a new element.
 		 */
 		public boolean hasNext() {
@@ -107,7 +112,7 @@ public class Eye extends Component {
 
 		/**
 		 * Returns the next element.
-		 * @return Next up-to-date enemy.
+		 * @return next up-to-date enemy.
 		 * @thows NoSuchElementException if no element is present.
 		 */
 		public Enemy next() {
@@ -128,6 +133,9 @@ public class Eye extends Component {
 		}
 	}
 
+	/**
+	 * Represents the direction a radar may turn.
+	 */
 	public enum Direction {
 		Right(1), Left(-1);
 
@@ -137,25 +145,45 @@ public class Eye extends Component {
 			this.m_direction = direction;
 		}
 
+		/**
+		 * Calculates the number of degrees which might be insert into the 'setTurn' function.
+		 * @param degrees The degrees the radar should turn into the direction.
+		 */
 		public double getRotationToRight(double degrees) {
 			return degrees * this.m_direction;
 		}
 
+		/**
+		 * Returns the reversed direction.
+		 * @return the reserved direction.
+		 */
 		public Direction reverse() {
 			return (this == Direction.Right ? Direction.Left : Direction.Right);
 		}
 	}
 
+	/**
+	 * An event which is be fired if the scanning is complete.
+	 */
 	public static class ScanningComplete implements Signal.Event {
 	}
 
+	/**
+	 * A calculator for the performance of an enemy on base of its survived turns.
+	 */
 	private static class EnemyPerformance implements Serializable {
 		private double m_avg, m_number;
 
+		/**
+		 * Adds a normalized value.
+		 */
 		public void addValue(double value) {
 			this.m_avg -= (this.m_avg - value) / ++m_number;
 		}
 
+		/**
+		 * Returns the average of the performance.
+		 */
 		public double getAverage() {
 			return this.m_avg;
 		}
@@ -176,22 +204,24 @@ public class Eye extends Component {
 	/**
 	 * Create the eye.
 	 */
-	public Eye(Skynet skynet) {
+	public Eye(final Skynet skynet) {
 		super(skynet);
 		this.skynet.setAdjustRadarForRobotTurn(true);
 
 		this.Threshold = (int) skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(200, 100, 300, 10));
 
-		this.m_enemies = new HashMap<String, Enemy>();
+		// Tries to load the performance of former seen robots from a file
 		if ((this.m_performance = Memory.load(new File(skynet.getDataDirectory(), Eye.ENEMY_FILENAME))) == null) {
 			m_performance = new Memory<>();
 		}
+
+		this.m_enemies = new HashMap<String, Enemy>();
 		this.m_isTurningComplete = true;
 		this.m_direction = Direction.Left;
 	}
 
 	@Override
-	protected void handleEvent(Signal.Event event) {
+	protected void handleEvent(final Signal.Event event) {
 		if (event instanceof RobotFound) {
 			robocode.ScannedRobotEvent enemy = ((RobotFound) event).getRobot();
 
@@ -204,6 +234,7 @@ public class Eye extends Component {
 				this.m_enemies.put(enemy.getName(), e);
 			}
 
+			// Checks the current distance of the new-seen enemy.
 			if (e.lastContact().getDistance() < this.Threshold) {
 				this.sendSignal(new RobotNearby(e));
 			}
@@ -212,17 +243,21 @@ public class Eye extends Component {
 			if (this.m_isTurningComplete) {
 				this.m_isTurningComplete = false;
 			}
+			// Send signal, when scanning is finished
 			this.sendSignal(new ScanningComplete());
 		} else if (event instanceof Skynet.EnemyDied) {
+			// Save enemy as dead
 			Enemy e = this.getEnemy(((Skynet.EnemyDied) event).getEnemy().getName());
 			e.setDeadTurn((int) this.skynet.getTime());
 		} else if (event instanceof Skynet.RoundEnded) {
+			// Calculate the performance of every enemy after the round ends.
 			final int turns = ((Skynet.RoundEnded) event).getTurns();
 			for (Enemy e : this.m_enemies.values()) {
 				EnemyPerformance performance = this.m_performance.getValue(e.getBaseName(), new EnemyPerformance());
 				performance.addValue(e.isAlive() ? 1.0d : (e.getDeadTurn() / turns));
 			}
 		} else if (event instanceof Skynet.BattleEnded) {
+			// Tries to save the heuristics for further use
 			try {
 				this.m_performance.save(new File(skynet.getDataDirectory(), Eye.ENEMY_FILENAME));
 			} catch (Exception ex) {
@@ -232,7 +267,7 @@ public class Eye extends Component {
 	}
 
 	@Override
-	protected void handleCommand(Signal.Command command) {
+	protected void handleCommand(final Signal.Command command) {
 		if (command instanceof Brain.Scan) {
 			this.scan();
 		} else if (command instanceof Brain.Attack) {
@@ -245,10 +280,14 @@ public class Eye extends Component {
 	 * Returns an enemy by its name.
 	 * @return the Enemy or null elsewise.
 	 */
-	public Enemy getEnemy(String name) {
+	public Enemy getEnemy(final String name) {
 		return this.m_enemies.get(name);
 	}
 
+	/**
+	 * Returns the heading of the radar.
+	 * @return the heading of the radar.
+	 */
 	public double getHeading() {
 		return this.skynet.getRadarHeading();
 	}
@@ -257,6 +296,7 @@ public class Eye extends Component {
 	 * Scans for other robots.
 	 */
 	protected void scan() {
+		// Turn full at the beginning or random during the battle
 		if (m_isTurningComplete || Utils.getRandom().nextInt(3) == 2) {
 			this.turnTo(360);
 		} else {
@@ -282,7 +322,11 @@ public class Eye extends Component {
 		}
 	}
 
-	protected void turnTo(double degrees) {
+	/**
+	 * Turns the radar for a specific number of degrees.
+	 * @param degrees The degrees to turn.
+	 */
+	protected void turnTo(final double degrees) {
 		this.skynet.setTurnRadarRight(degrees);
 		this.skynet.addCustomEvent(new robocode.RadarTurnCompleteCondition(this.skynet));
 	}
