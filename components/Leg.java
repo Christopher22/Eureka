@@ -95,6 +95,18 @@ public class Leg extends Component {
     }
   }
 
+  public static class RobotHit implements Signal.GlobalEvent {
+    private robocode.HitRobotEvent m_hit;
+
+    public RobotHit(robocode.HitRobotEvent hit) {
+      this.m_hit = hit;
+    }
+
+    public double getBearing() {
+      return this.m_hit.getBearingRadians();
+    }
+  }
+
   /**
   * The definition of a suitable distance towards a border.
   */

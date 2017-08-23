@@ -34,16 +34,24 @@ public class Skynet extends AdvancedRobot {
 		return new Point2D.Double(this.getX(), this.getY());
 	}
 
+	@Override
 	public void onPaint(Graphics2D g) {
 		this.eye.drawDebug(g);
 		this.leg.drawDebug(g);
 		this.fist.drawDebug(g);
 	}
 
+	@Override
 	public void onScannedRobot(ScannedRobotEvent e) {
 		this.m_brain.update(null, new Eye.RobotFound(e));
 	}
 
+	@Override
+	public void onHitRobot(HitRobotEvent e) {
+		this.m_brain.update(null, new Leg.RobotHit(e));
+	}
+
+	@Override
 	public void onCustomEvent(CustomEvent event) {
 		this.m_brain.update(null, new Signal.CustomEvent(event.getCondition()));
 		this.removeCustomEvent(event.getCondition());
