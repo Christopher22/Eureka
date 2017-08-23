@@ -46,16 +46,15 @@ public class Fist extends Component {
     public final static int ITERATIONS = 15;
     public final static double ACCURACY = 0.01d;
 
-    private Enemy m_currentTarget;
+    private boolean m_hasTarget;
     private double m_firePower;
-    private Point2D.Double m_DebuggingTarget;
 
     /**
      * Creates a new bullet.
      */
     public Fist(Skynet skynet) {
         super(skynet);
-        this.m_currentTarget = null;
+        this.m_hasTarget = false;
         this.PowerConstant = skynet.getBrain().accessMemory("Fist/PowerConstant", new Range(500, 400, 600, 50));
 
         this.skynet.setAdjustGunForRobotTurn(true);
@@ -66,22 +65,26 @@ public class Fist extends Component {
      * Aim an enemy.
      */
     private boolean aim(Enemy target) {
-        m_currentTarget = target;
-
         long ct = secant(time(target.lastContact().getDistance(), this.PowerConstant), target, this.PowerConstant);
         Point2D.Double p = target.predictPosition(ct);
-        this.m_firePower = calculateFirePower(HelperFunctions.range(this.skynet.getPosition(), p), this.PowerConstant);
         double calculatedBearing = HelperFunctions.bearing(this.skynet.getPosition(), p)
                 - this.skynet.getHeadingRadians();
         double turnGun = Utils.normalRelativeAngle(
                 this.skynet.getHeadingRadians() - this.skynet.getGunHeadingRadians() + calculatedBearing);
 
-        if (this.skynet.getGunHeat() != 0 || this.m_firePower < robocode.Rules.MIN_BULLET_POWER) {
-            m_currentTarget = null;
+        return this.aim(turnGun,
+                calculateFirePower(HelperFunctions.range(this.skynet.getPosition(), p), this.PowerConstant));
+    }
+
+    private boolean aim(double gunRotation, double firePower) {
+        if (this.skynet.getGunHeat() != 0 || firePower < robocode.Rules.MIN_BULLET_POWER) {
+            this.m_hasTarget = false;
             return false;
         }
 
-        this.skynet.setTurnGunRightRadians(turnGun);
+        this.m_hasTarget = true;
+        this.m_firePower = firePower;
+        this.skynet.setTurnGunRightRadians(gunRotation);
         this.skynet.addCustomEvent(new robocode.GunTurnCompleteCondition(this.skynet));
         return true;
     }
@@ -132,7 +135,7 @@ public class Fist extends Component {
      * Checks if an enemy is aimed in the moment.
      */
     public boolean isAiming() {
-        return m_currentTarget != null;
+        return this.m_hasTarget;
     }
 
     @Override
@@ -150,17 +153,8 @@ public class Fist extends Component {
                 && ((Signal.CustomEvent) event).getCondition() instanceof robocode.GunTurnCompleteCondition
                 && this.isAiming()) {
             this.skynet.fire(this.m_firePower);
-            m_currentTarget = null;
-            m_DebuggingTarget = null;
+            this.m_hasTarget = false;
             this.sendSignal(new BulletFired());
-        }
-    }
-
-    @Override
-    public void drawDebug(Graphics2D g) {
-        if (m_DebuggingTarget != null) {
-            g.setColor(java.awt.Color.orange);
-            g.fillOval((int) m_DebuggingTarget.getX() - 8, (int) m_DebuggingTarget.getY() - 8, 8, 8);
         }
     }
 }
