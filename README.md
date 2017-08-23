@@ -1,10 +1,10 @@
-#Eureka
+# Eureka
 
-##Introduction
+## Introduction
 
 Even if the software "Robocode" seems on the first glance like a programming exercise for new software engineers, the tactical opportunities, complex solutions and demanding challenges on a second proves this assumption wrong. "Eureka" is the try to build a highly modular foundation for a "rational" agent which is able to survive even in demanding circumstances by being optimizable not only on compile time but improve itself during supervised training and unsupervised battles.
 
-##Design
+## Design
 
 Eureka was not designed to be the best melee champion, victorious in every fight. The highly optimized robots nowadays being at the top of competitions seems to be rather excellent with their hard-wired logic. Just borrow their ideas to create a "Frankenbot", copying already proven ideas seems therefore rather boring. This bot should be different. It should have the ability to be flexible and adaptable for future use; suitable to be optimized for a 1-vs-1 exactly just like for melee battles or fight in teams. To achieve this goal of flexibility, two major concepts were used.
 
@@ -12,7 +12,7 @@ For adaptations on compile-time by the developer, Eureka was structured from the
 
 For adaptations at runtime by artificial intelligence, the extensive learning features of Eureka comes into account. This mechanic is the outstanding feature of Eureka, in this complexity used by almost no other robots. First of all, Eureka is capable of training itself unsupervised during battles. To do so, it evaluates continuously the performance of its enemies and saves the results afterward. The gained information are used as heuristics in movement and attacking. While this tactic is well researched and used by other robots, Eureka combines it with its unique capability of being trained in a process of supervised learning, too. To do so, we need to have a look at the way the robots stores its parameters. These "constants", which determine the exact way the robot behave i.e. which distance is to be handled as "nearby" or which is the minimal distance the robot may move. All these are not stored on a per-component basis like everything else but are saved in the "Memory" of the robot together with the information, if the value is really constant or may be just in a specific range. The latter are the arguments which allow Eureka to optimize itself against special enemies on the one hand or battles in general. To do so, the robot is called outside of the battle: Given a specific number of rounds and a list of enemies, it will then start thousands of battles where it tests all permutations of its parameter regarding its own success measured by the score calculated by the engine using them. This brute-force-method guarantees that it will find not just a local optimum but the best solution of all, a human might not have seen before. The most successful set will afterward not only be stored and used in the next battles but will improve the heuristics for the performance of the enemies, too.
 
-##Strategy in battle
+## Strategy in battle
 
 The strategies of Eureka are well researched and already applied by other existing robots, except that there are enriched with the ability to be improved over time, rounds and battles. The overall goal is the create an agent, which seems to learn and work in a rational and reasonable manner. In consideration of the autonomy of the different components, it seems reasonable to have a first look at each of them. 
 
@@ -22,6 +22,6 @@ The gun of Eureka is implementing under the background of predictive shooting. I
 
 The radar is crucial for a robot like Eureka. Without a good overview of the battlefield, the tracking of robots over multiple turns and exact predictions of movement becomes rather difficult and error-prone. Even if a continuous turning of the radar would, therefore, be a valid naive approach, according to own experiments the performance seems not to be sufficient enough. Even if a rational agent has to focus on the environment all around, he needs a bias of focus towards the direction it is moving. Elsewise, the danger of colliding with another object or missing easy targets would simply be too high. To mimic this behavior, Eureka scans the 180 degrees before it twice as often as its back.
 
-##Performance & Further work
+## Performance & Further work
 
 The current performance of Eureka is not far as good as they might be. Besides the automatic optimization of the parameters, it would be rather crucial to put some effort in the optimisation of the math behind heuristics; a process not easily automatable.  A crucial part in increasing the performance would be the improvement of the gun towards a more advanced version. Nevertheless, it seems that the current performance is acceptable under the premise of building a robot for the experimentation with hand-written machine learning approaches. The next step would be even to evaluate the own order of events and reactions in comparison to the score to find an optimal reaction. In such a robot, any hard-coded algorithms would be necessary. In the current implementation of Eureka, the API and the data are ready for such an analysis and just waiting for an AI implementation in future - the battle for the throne have only just begun.
