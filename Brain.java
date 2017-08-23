@@ -114,6 +114,7 @@ public class Brain extends Observable implements Observer {
             double angle = Utils.normalRelativeAngle(this.m_skynet.getHeadingRadians()
                     - this.m_skynet.getGunHeadingRadians() + ((Leg.RobotHit) arg).getBearing());
             this.sendSignal(new Brain.Fire(angle, 3));
+            this.m_skynet.execute();
         }
 
         this.sendSignal((Signal) arg);
