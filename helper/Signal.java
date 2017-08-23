@@ -1,4 +1,4 @@
-package skynet.helper;
+package eureka.helper;
 
 /**
  * A signal which is sended between the differnet components and the brain.

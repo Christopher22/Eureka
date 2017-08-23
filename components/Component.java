@@ -1,4 +1,4 @@
-package skynet.components;
+package eureka.components;
 
 import java.util.Observable;
 import java.util.Observer;
@@ -6,32 +6,32 @@ import java.awt.Graphics2D;
 
 import robocode.*;
 
-import skynet.Skynet;
-import skynet.helper.Signal;
+import eureka.Eureka;
+import eureka.helper.Signal;
 
 /**
- * An functional unit of 'Skynet', mimicking human anatomy.
+ * An functional unit of 'Eureka', mimicking human anatomy.
  */
 public abstract class Component extends Observable implements Observer {
-  protected final Skynet skynet;
+  protected final Eureka eureka;
 
   /**
    * Initialize a unit and register it for event handling.
-   * @param skynet The instance of skynet.
+   * @param eureka The instance of eureka.
    */
-  public Component(final Skynet skynet) {
-    this.skynet = skynet;
+  public Component(final Eureka eureka) {
+    this.eureka = eureka;
 
-    skynet.getBrain().addObserver(this);
-    this.addObserver(skynet.getBrain());
+    eureka.getBrain().addObserver(this);
+    this.addObserver(eureka.getBrain());
   }
 
   /**
-   * Returns the current instance of Skynet.
-   * @return an valid instance of 'Skynet'.
+   * Returns the current instance of Eureka.
+   * @return an valid instance of 'Eureka'.
    */
-  public Skynet getSkynet() {
-    return this.skynet;
+  public Eureka getEureka() {
+    return this.eureka;
   }
 
   /**

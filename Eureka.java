@@ -1,4 +1,4 @@
-package skynet;
+package eureka;
 
 import java.awt.geom.Point2D;
 import java.util.Observable;
@@ -7,14 +7,14 @@ import java.awt.Graphics2D;
 
 import robocode.*;
 
-import skynet.components.*;
-import skynet.helper.Enemy;
-import skynet.helper.Signal;
+import eureka.components.*;
+import eureka.helper.Enemy;
+import eureka.helper.Signal;
 
 /**
- * Skynet - a robot by Christopher Gundler.
+ * Eureka - a robot by Christopher Gundler.
  */
-public class Skynet extends AdvancedRobot {
+public class Eureka extends AdvancedRobot {
 
 	/**
 	 * A signal which is fired if the battle ends.
@@ -119,17 +119,17 @@ public class Skynet extends AdvancedRobot {
 
 	@Override
 	public void onBattleEnded(BattleEndedEvent event) {
-		this.m_brain.update(null, new Skynet.BattleEnded());
+		this.m_brain.update(null, new Eureka.BattleEnded());
 	}
 
 	@Override
 	public void onRoundEnded(RoundEndedEvent event) {
-		this.m_brain.update(null, new Skynet.RoundEnded(event.getTurns()));
+		this.m_brain.update(null, new Eureka.RoundEnded(event.getTurns()));
 	}
 
 	@Override
 	public void onRobotDeath(RobotDeathEvent event) {
-		this.m_brain.update(null, new Skynet.EnemyDied(event));
+		this.m_brain.update(null, new Eureka.EnemyDied(event));
 	}
 
 	/**

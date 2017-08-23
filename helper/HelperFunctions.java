@@ -1,4 +1,4 @@
-package skynet.helper;
+package eureka.helper;
 
 import java.awt.geom.Point2D;
 

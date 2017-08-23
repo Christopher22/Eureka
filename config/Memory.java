@@ -1,4 +1,4 @@
-package skynet.config;
+package eureka.config;
 
 import java.io.*;
 import java.util.TreeMap; // Guaranties order of keys rather then HashMap

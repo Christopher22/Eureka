@@ -1,4 +1,4 @@
-package skynet;
+package eureka;
 
 import java.util.Observable;
 import java.util.Observer;
@@ -6,15 +6,15 @@ import java.io.File;
 
 import robocode.util.Utils;
 
-import skynet.components.*;
-import skynet.helper.*;
-import skynet.config.*;
+import eureka.components.*;
+import eureka.helper.*;
+import eureka.config.*;
 
 /**
  * The brain - home of the rational agent.
  */
 public class Brain extends Observable implements Observer {
-    private final Skynet m_skynet;
+    private final Eureka m_eureka;
     private Memory<Parameter> m_memory;
     private final boolean m_isTraining;
 
@@ -95,11 +95,11 @@ public class Brain extends Observable implements Observer {
     /**
      * Initialize the new AI.
      */
-    public Brain(final Skynet skynet) {
-        this.m_skynet = skynet;
+    public Brain(final Eureka eureka) {
+        this.m_eureka = eureka;
 
         // Load training memory, if in training.
-        if ((this.m_memory = Memory.load(new File(skynet.getDataDirectory(), Trainer.TRAINING_FILENAME))) != null) {
+        if ((this.m_memory = Memory.load(new File(eureka.getDataDirectory(), Trainer.TRAINING_FILENAME))) != null) {
             this.m_isTraining = true;
         } else {
             this.m_memory = new Memory<Parameter>();
@@ -137,7 +137,7 @@ public class Brain extends Observable implements Observer {
      * @param signal The signal which is to be transmitted.
      */
     private void sendSignal(final Signal signal) {
-        this.m_skynet.out.format("[%s] %s\n", signal instanceof Signal.Command ? "Command" : "Event",
+        this.m_eureka.out.format("[%s] %s\n", signal instanceof Signal.Command ? "Command" : "Event",
                 signal.getClass().getSimpleName());
 
         this.setChanged();
@@ -151,29 +151,29 @@ public class Brain extends Observable implements Observer {
         }
 
         if (((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired))
-                || (arg instanceof Fist.AimAborted) && !this.m_skynet.getFist().isAiming()) {
+                || (arg instanceof Fist.AimAborted) && !this.m_eureka.getFist().isAiming()) {
             // Move forward after the end of a operation
             this.sendSignal(new Brain.Move());
-            this.m_skynet.execute();
-        } else if (arg instanceof Eye.RobotNearby && !this.m_skynet.getFist().isAiming()) {
+            this.m_eureka.execute();
+        } else if (arg instanceof Eye.RobotNearby && !this.m_eureka.getFist().isAiming()) {
             // Attack a robot nearby.
             this.sendSignal(new Brain.Stop());
             this.sendSignal(new Brain.Attack(((Eye.RobotNearby) arg).getRobot()));
-            this.m_skynet.execute();
+            this.m_eureka.execute();
         } else if (arg instanceof Eye.ScanningComplete) {
             // Continuos scanning after end and move if it was the first one at the beginning.
             this.sendSignal(new Brain.Scan());
-            if (!this.m_skynet.getLeg().isMoving()) {
+            if (!this.m_eureka.getLeg().isMoving()) {
                 this.sendSignal(new Brain.Move());
             }
-            this.m_skynet.execute();
-        } else if (arg instanceof Leg.RobotHit && !this.m_skynet.getFist().isAiming()) {
+            this.m_eureka.execute();
+        } else if (arg instanceof Leg.RobotHit && !this.m_eureka.getFist().isAiming()) {
             // Fires in direction of a hitting robot
             this.sendSignal(new Brain.Stop());
-            double angle = Utils.normalRelativeAngle(this.m_skynet.getHeadingRadians()
-                    - this.m_skynet.getGunHeadingRadians() + ((Leg.RobotHit) arg).getBearing());
+            double angle = Utils.normalRelativeAngle(this.m_eureka.getHeadingRadians()
+                    - this.m_eureka.getGunHeadingRadians() + ((Leg.RobotHit) arg).getBearing());
             this.sendSignal(new Brain.Fire(angle, 3));
-            this.m_skynet.execute();
+            this.m_eureka.execute();
         }
 
         // Transmit the signal towards the other components.

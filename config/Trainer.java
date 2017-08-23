@@ -1,4 +1,4 @@
-package skynet.config;
+package eureka.config;
 
 import java.util.Map;
 import java.util.List;

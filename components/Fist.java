@@ -1,16 +1,16 @@
-package skynet.components;
+package eureka.components;
 
 import java.awt.geom.Point2D;
 import java.util.Observable;
 import java.awt.Graphics2D;
 import robocode.util.Utils;
 
-import skynet.Skynet;
-import skynet.Brain;
-import skynet.helper.*;
-import skynet.helper.Signal.Command;
-import skynet.helper.Signal.Event;
-import skynet.config.*;
+import eureka.Eureka;
+import eureka.Brain;
+import eureka.helper.*;
+import eureka.helper.Signal.Command;
+import eureka.helper.Signal.Event;
+import eureka.config.*;
 
 /**
  * The fist - used to destroy enemies.
@@ -44,13 +44,13 @@ public class Fist extends Component {
     /**
      * Creates a new fist.
      */
-    public Fist(final Skynet skynet) {
-        super(skynet);
+    public Fist(final Eureka eureka) {
+        super(eureka);
         this.m_hasTarget = false;
-        this.PowerConstant = skynet.getBrain().accessMemory("Fist/PowerConstant", new Range(500, 400, 600, 50));
+        this.PowerConstant = eureka.getBrain().accessMemory("Fist/PowerConstant", new Range(500, 400, 600, 50));
 
-        this.skynet.setAdjustGunForRobotTurn(true);
-        this.skynet.setAdjustRadarForGunTurn(true);
+        this.eureka.setAdjustGunForRobotTurn(true);
+        this.eureka.setAdjustRadarForGunTurn(true);
     }
 
     /**
@@ -59,28 +59,28 @@ public class Fist extends Component {
     private boolean aim(final Enemy target) {
         long ct = secant(time(target.lastContact().getDistance(), this.PowerConstant), target, this.PowerConstant);
         Point2D.Double p = target.predictPosition(ct);
-        double calculatedBearing = HelperFunctions.bearing(this.skynet.getPosition(), p)
-                - this.skynet.getHeadingRadians();
+        double calculatedBearing = HelperFunctions.bearing(this.eureka.getPosition(), p)
+                - this.eureka.getHeadingRadians();
         double turnGun = Utils.normalRelativeAngle(
-                this.skynet.getHeadingRadians() - this.skynet.getGunHeadingRadians() + calculatedBearing);
+                this.eureka.getHeadingRadians() - this.eureka.getGunHeadingRadians() + calculatedBearing);
 
         return this.aim(turnGun,
-                calculateFirePower(HelperFunctions.range(this.skynet.getPosition(), p), this.PowerConstant));
+                calculateFirePower(HelperFunctions.range(this.eureka.getPosition(), p), this.PowerConstant));
     }
 
     /**
      * Aims towards a position and prepare firing.
      */
     private boolean aim(final double gunRotation, final double firePower) {
-        if (this.skynet.getGunHeat() != 0 || firePower < robocode.Rules.MIN_BULLET_POWER) {
+        if (this.eureka.getGunHeat() != 0 || firePower < robocode.Rules.MIN_BULLET_POWER) {
             this.m_hasTarget = false;
             return false;
         }
 
         this.m_hasTarget = true;
         this.m_firePower = firePower;
-        this.skynet.setTurnGunRightRadians(gunRotation);
-        this.skynet.addCustomEvent(new robocode.GunTurnCompleteCondition(this.skynet));
+        this.eureka.setTurnGunRightRadians(gunRotation);
+        this.eureka.addCustomEvent(new robocode.GunTurnCompleteCondition(this.eureka));
         return true;
     }
 
@@ -118,7 +118,7 @@ public class Fist extends Component {
 
     private double f(final long time, final Enemy e, final double powerConstant) {
         Point2D.Double d = e.predictPosition(time);
-        double r = HelperFunctions.range(this.skynet.getPosition(), d);
+        double r = HelperFunctions.range(this.eureka.getPosition(), d);
         return r - calculateBulletVelocity(calculateFirePower(r, powerConstant)) * time;
     }
 
@@ -127,7 +127,7 @@ public class Fist extends Component {
      * @return the heading of the gun.
      */
     public double getHeading() {
-        return this.skynet.getGunHeading();
+        return this.eureka.getGunHeading();
     }
 
     /**
@@ -143,8 +143,8 @@ public class Fist extends Component {
         if (command instanceof Brain.Attack && !this.aim(((Brain.Attack) command).getEnemy())) {
             this.sendSignal(new AimAborted());
         } else if (command instanceof Brain.Move && !this.isAiming()) {
-            this.skynet.setTurnGunRightRadians(
-                    Utils.normalRelativeAngle(this.skynet.getHeadingRadians() - this.skynet.getGunHeadingRadians()));
+            this.eureka.setTurnGunRightRadians(
+                    Utils.normalRelativeAngle(this.eureka.getHeadingRadians() - this.eureka.getGunHeadingRadians()));
         }
     }
 
@@ -152,7 +152,7 @@ public class Fist extends Component {
         if (event instanceof Signal.CustomEvent
                 && ((Signal.CustomEvent) event).getCondition() instanceof robocode.GunTurnCompleteCondition
                 && this.isAiming()) {
-            this.skynet.fire(this.m_firePower);
+            this.eureka.fire(this.m_firePower);
             this.m_hasTarget = false;
             this.sendSignal(new BulletFired());
         }

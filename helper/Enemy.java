@@ -1,4 +1,4 @@
-package skynet.helper;
+package eureka.helper;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayDeque;
@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 import robocode.*;
 
-import skynet.Skynet;
+import eureka.Eureka;
 
 /**
  * Represents an enemy on the battlefield and allows to track it.
@@ -27,22 +27,22 @@ public class Enemy {
 
     /**
      * Creates a new contact from a 'ScannedRobotEvent'.
-     * @param skynet The robot.
+     * @param eureka The robot.
      * @param enemy The enemy which was found.
      */
-    public Contact(final Skynet skynet, final ScannedRobotEvent enemy) {
+    public Contact(final Eureka eureka, final ScannedRobotEvent enemy) {
       super(
-          skynet.getX()
-              + Math.sin(Math.toRadians((skynet.getHeading() + enemy.getBearing()) % 360)) * enemy.getDistance(),
-          skynet.getY()
-              + Math.cos(Math.toRadians((skynet.getHeading() + enemy.getBearing()) % 360)) * enemy.getDistance());
+          eureka.getX()
+              + Math.sin(Math.toRadians((eureka.getHeading() + enemy.getBearing()) % 360)) * enemy.getDistance(),
+          eureka.getY()
+              + Math.cos(Math.toRadians((eureka.getHeading() + enemy.getBearing()) % 360)) * enemy.getDistance());
 
-      this.m_time = skynet.getTime();
+      this.m_time = eureka.getTime();
       this.m_energy = enemy.getEnergy();
       this.m_velocity = enemy.getVelocity();
       this.m_heading = enemy.getHeading();
       this.m_bearing = enemy.getBearing();
-      this.m_distance = this.distance(skynet.getX(), skynet.getY());
+      this.m_distance = this.distance(eureka.getX(), eureka.getY());
     }
 
     /**
@@ -101,25 +101,25 @@ public class Enemy {
   /**
    * Creates a new enemy from a 'ScannedRobotEvent'.
    */
-  public Enemy(final Skynet skynet, final ScannedRobotEvent enemy) {
+  public Enemy(final Eureka eureka, final ScannedRobotEvent enemy) {
     this.m_name = enemy.getName();
     this.m_events = new ArrayDeque<Contact>();
     this.m_dead = null;
 
-    this.addContact(skynet, enemy);
+    this.addContact(eureka, enemy);
   }
 
   /**
    * Adds a contact with an enemy.
-   * @param skynet The robot.
+   * @param eureka The robot.
    * @param enemy The enemy.
    */
-  public void addContact(Skynet skynet, ScannedRobotEvent enemy) {
+  public void addContact(Eureka eureka, ScannedRobotEvent enemy) {
     if (!enemy.getName().equals(this.m_name)) {
       throw new IllegalArgumentException("Name different");
     }
 
-    this.m_events.push(new Contact(skynet, enemy));
+    this.m_events.push(new Contact(eureka, enemy));
   }
 
   /**

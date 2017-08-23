@@ -1,4 +1,4 @@
-package skynet.components;
+package eureka.components;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -10,10 +10,10 @@ import java.io.Serializable;
 
 import robocode.util.Utils;
 
-import skynet.Skynet;
-import skynet.Brain;
-import skynet.helper.*;
-import skynet.config.*;
+import eureka.Eureka;
+import eureka.Brain;
+import eureka.helper.*;
+import eureka.config.*;
 
 /**
  * The eye - tracks multiple enemies, calculates their danger and scans the environment.
@@ -204,14 +204,14 @@ public class Eye extends Component {
 	/**
 	 * Create the eye.
 	 */
-	public Eye(final Skynet skynet) {
-		super(skynet);
-		this.skynet.setAdjustRadarForRobotTurn(true);
+	public Eye(final Eureka eureka) {
+		super(eureka);
+		this.eureka.setAdjustRadarForRobotTurn(true);
 
-		this.Threshold = (int) skynet.getBrain().accessMemory("Eye/NearbyThreshold", new Range(200, 100, 300, 10));
+		this.Threshold = (int) eureka.getBrain().accessMemory("Eye/NearbyThreshold", new Range(200, 100, 300, 10));
 
 		// Tries to load the performance of former seen robots from a file
-		if ((this.m_performance = Memory.load(new File(skynet.getDataDirectory(), Eye.ENEMY_FILENAME))) == null) {
+		if ((this.m_performance = Memory.load(new File(eureka.getDataDirectory(), Eye.ENEMY_FILENAME))) == null) {
 			m_performance = new Memory<>();
 		}
 
@@ -228,9 +228,9 @@ public class Eye extends Component {
 			// Add enemy to queue, if not already happen.
 			Enemy e = this.m_enemies.get(enemy.getName());
 			if (e != null) {
-				e.addContact(this.skynet, enemy);
+				e.addContact(this.eureka, enemy);
 			} else {
-				e = new Enemy(this.skynet, enemy);
+				e = new Enemy(this.eureka, enemy);
 				this.m_enemies.put(enemy.getName(), e);
 			}
 
@@ -245,23 +245,23 @@ public class Eye extends Component {
 			}
 			// Send signal, when scanning is finished
 			this.sendSignal(new ScanningComplete());
-		} else if (event instanceof Skynet.EnemyDied) {
+		} else if (event instanceof Eureka.EnemyDied) {
 			// Save enemy as dead
-			Enemy e = this.getEnemy(((Skynet.EnemyDied) event).getEnemy().getName());
-			e.setDeadTurn((int) this.skynet.getTime());
-		} else if (event instanceof Skynet.RoundEnded) {
+			Enemy e = this.getEnemy(((Eureka.EnemyDied) event).getEnemy().getName());
+			e.setDeadTurn((int) this.eureka.getTime());
+		} else if (event instanceof Eureka.RoundEnded) {
 			// Calculate the performance of every enemy after the round ends.
-			final int turns = ((Skynet.RoundEnded) event).getTurns();
+			final int turns = ((Eureka.RoundEnded) event).getTurns();
 			for (Enemy e : this.m_enemies.values()) {
 				EnemyPerformance performance = this.m_performance.getValue(e.getBaseName(), new EnemyPerformance());
 				performance.addValue(e.isAlive() ? 1.0d : (e.getDeadTurn() / turns));
 			}
-		} else if (event instanceof Skynet.BattleEnded) {
+		} else if (event instanceof Eureka.BattleEnded) {
 			// Tries to save the heuristics for further use
 			try {
-				this.m_performance.save(new File(skynet.getDataDirectory(), Eye.ENEMY_FILENAME));
+				this.m_performance.save(new File(eureka.getDataDirectory(), Eye.ENEMY_FILENAME));
 			} catch (Exception ex) {
-				this.skynet.out.println("[ERROR] Saving failed");
+				this.eureka.out.println("[ERROR] Saving failed");
 			}
 		}
 	}
@@ -272,7 +272,7 @@ public class Eye extends Component {
 			this.scan();
 		} else if (command instanceof Brain.Attack) {
 			Enemy e = ((Brain.Attack) command).getEnemy();
-			this.turnTo(this.skynet.getHeading() - this.skynet.getRadarHeading() + e.lastContact().getBearing());
+			this.turnTo(this.eureka.getHeading() - this.eureka.getRadarHeading() + e.lastContact().getBearing());
 		}
 	}
 
@@ -289,7 +289,7 @@ public class Eye extends Component {
 	 * @return the heading of the radar.
 	 */
 	public double getHeading() {
-		return this.skynet.getRadarHeading();
+		return this.eureka.getRadarHeading();
 	}
 
 	/**
@@ -305,7 +305,7 @@ public class Eye extends Component {
 			int scannedBots = 0;
 			for (Enemy enemy : this.getCurrentEnemies()) {
 				double bearing = Utils.normalRelativeAngle(
-						this.skynet.getHeading() - this.skynet.getRadarHeading() + enemy.lastContact().getBearing());
+						this.eureka.getHeading() - this.eureka.getRadarHeading() + enemy.lastContact().getBearing());
 				if (Math.abs(bearing) > maxBearingAbs) {
 					maxBearingAbs = Math.abs(bearing);
 					maxBearing = bearing;
@@ -314,7 +314,7 @@ public class Eye extends Component {
 			}
 
 			double radarTurn = this.m_direction.getRotationToRight(180);
-			if (scannedBots == this.skynet.getOthers())
+			if (scannedBots == this.eureka.getOthers())
 				radarTurn = maxBearing + Math.signum(maxBearing) * 22.5;
 
 			this.m_direction = this.m_direction.reverse();
@@ -327,8 +327,8 @@ public class Eye extends Component {
 	 * @param degrees The degrees to turn.
 	 */
 	protected void turnTo(final double degrees) {
-		this.skynet.setTurnRadarRight(degrees);
-		this.skynet.addCustomEvent(new robocode.RadarTurnCompleteCondition(this.skynet));
+		this.eureka.setTurnRadarRight(degrees);
+		this.eureka.addCustomEvent(new robocode.RadarTurnCompleteCondition(this.eureka));
 	}
 
 	/**
@@ -336,7 +336,7 @@ public class Eye extends Component {
 	 * @return The iterator over the enemies.
 	 */
 	public CurrentEnemyIterator getCurrentEnemies() {
-		return new CurrentEnemyIterator(this.m_enemies.values().iterator(), this.skynet.getTime());
+		return new CurrentEnemyIterator(this.m_enemies.values().iterator(), this.eureka.getTime());
 	}
 
 	@Override

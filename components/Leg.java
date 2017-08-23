@@ -1,4 +1,4 @@
-package skynet.components;
+package eureka.components;
 
 import java.awt.geom.Point2D;
 import java.util.Arrays;
@@ -8,12 +8,12 @@ import java.awt.Graphics2D;
 
 import robocode.util.Utils;
 
-import skynet.Skynet;
-import skynet.Brain;
-import skynet.helper.*;
-import skynet.helper.Signal.Command;
-import skynet.helper.Signal.Event;
-import skynet.config.*;
+import eureka.Eureka;
+import eureka.Brain;
+import eureka.helper.*;
+import eureka.helper.Signal.Command;
+import eureka.helper.Signal.Event;
+import eureka.config.*;
 
 /**
  * The leg - used to control movement.
@@ -47,7 +47,7 @@ public class Leg extends Component {
      * Creates a new flypoint.
      */
     public FlightPoint(final Leg leg, final double radians, final int distance) {
-      super(leg.skynet.getX() + distance * Math.cos(radians), leg.skynet.getY() + distance * Math.sin(radians));
+      super(leg.eureka.getX() + distance * Math.cos(radians), leg.eureka.getY() + distance * Math.sin(radians));
       this.m_radians = radians;
       this.m_danger = this.calculateDanger(leg);
     }
@@ -81,28 +81,28 @@ public class Leg extends Component {
     private double calculateDanger(final Leg leg) {
 
       // Checks if the flightpoint is outside the battlefield.
-      if (this.getX() < leg.skynet.getWidth() * leg.BorderDefinition
-          || this.getX() > leg.skynet.getBattleFieldWidth() - leg.skynet.getWidth() * leg.BorderDefinition
-          || this.getY() < leg.skynet.getHeight() * leg.BorderDefinition
-          || this.getY() > leg.skynet.getBattleFieldHeight() - leg.skynet.getHeight() * leg.BorderDefinition) {
+      if (this.getX() < leg.eureka.getWidth() * leg.BorderDefinition
+          || this.getX() > leg.eureka.getBattleFieldWidth() - leg.eureka.getWidth() * leg.BorderDefinition
+          || this.getY() < leg.eureka.getHeight() * leg.BorderDefinition
+          || this.getY() > leg.eureka.getBattleFieldHeight() - leg.eureka.getHeight() * leg.BorderDefinition) {
         return java.lang.Double.POSITIVE_INFINITY;
       }
 
       // Mark position linear from the current movement as dangerous
-      double bearingToRobot = HelperFunctions.bearing(leg.skynet, this);
+      double bearingToRobot = HelperFunctions.bearing(leg.eureka, this);
       if (bearingToRobot < PI_ENVIRONMENT || 2 * Math.PI - bearingToRobot < PI_ENVIRONMENT
           || (bearingToRobot > Math.PI - PI_ENVIRONMENT && bearingToRobot < Math.PI + PI_ENVIRONMENT)) {
         return java.lang.Double.POSITIVE_INFINITY;
       }
 
       // Cache the position of the robot
-      final Point2D.Double ownPos = leg.skynet.getPosition();
+      final Point2D.Double ownPos = leg.eureka.getPosition();
 
       // Mark points nearby on the old position as dangerous
       double result = 0.08 / (leg.m_lastFlightpoint != null ? this.distanceSq(leg.m_lastFlightpoint) : 1);
 
       // Calculate the danger for enemies around
-      for (Enemy e : leg.skynet.getEye().getCurrentEnemies()) {
+      for (Enemy e : leg.eureka.getEye().getCurrentEnemies()) {
         result += e.getDanger()
             * (1 + Math
                 .abs(Math.cos(HelperFunctions.bearing(ownPos, this) - HelperFunctions.bearing(e.lastContact(), this))))
@@ -158,14 +158,14 @@ public class Leg extends Component {
   /**
    * Creates a new leg.
    */
-  public Leg(final Skynet skynet) {
-    super(skynet);
+  public Leg(final Eureka eureka) {
+    super(eureka);
 
     this.m_isMoving = false;
     this.m_flightPoints = new FlightPoint[FLIGHT_POINTS];
 
     // Loads the maximal movement - and check that it is bigger than the minimal movement.
-    this.MaximalMovement = (int) skynet.getBrain().accessMemory("Leg/MaxMovement", new Range(180, 120, 300, 10) {
+    this.MaximalMovement = (int) eureka.getBrain().accessMemory("Leg/MaxMovement", new Range(180, 120, 300, 10) {
       @Override
       public boolean setValue(double value, Memory<Parameter> currentMemory) {
         if (currentMemory.getValue("Leg/MinMovement", null).getValue() <= value) {
@@ -177,7 +177,7 @@ public class Leg extends Component {
     });
 
     // Loads the minimal movement - and check that it is bigger than the maximal movement.
-    this.MinimalMovement = (int) skynet.getBrain().accessMemory("Leg/MinMovement", new Range(80, 60, 200, 10) {
+    this.MinimalMovement = (int) eureka.getBrain().accessMemory("Leg/MinMovement", new Range(80, 60, 200, 10) {
       @Override
       public boolean setValue(double value, Memory<Parameter> currentMemory) {
         if (currentMemory.getValue("Leg/MaxMovement", null).getValue() >= value) {
@@ -188,7 +188,7 @@ public class Leg extends Component {
       }
     });
 
-    this.BorderDefinition = skynet.getBrain().accessMemory("Leg/Border", new Range(3, 1, 4, 0.5));
+    this.BorderDefinition = eureka.getBrain().accessMemory("Leg/Border", new Range(3, 1, 4, 0.5));
   }
 
   /**
@@ -218,7 +218,7 @@ public class Leg extends Component {
    * Aborts the current movement.
    */
   public void stop() {
-    this.skynet.stop();
+    this.eureka.stop();
     this.m_isMoving = false;
   }
 
@@ -255,19 +255,19 @@ public class Leg extends Component {
    */
   public void move(FlightPoint target) {
     // Check that the robot does not drive against the wall
-    double x = Math.min(Math.max(skynet.getWidth(), target.getX()), skynet.getBattleFieldWidth() - skynet.getWidth());
-    double y = Math.min(Math.max(skynet.getHeight(), target.getY()),
-        skynet.getBattleFieldHeight() - skynet.getHeight());
+    double x = Math.min(Math.max(eureka.getWidth(), target.getX()), eureka.getBattleFieldWidth() - eureka.getWidth());
+    double y = Math.min(Math.max(eureka.getHeight(), target.getY()),
+        eureka.getBattleFieldHeight() - eureka.getHeight());
 
     m_lastFlightpoint = target;
 
     // Adapted from http://old.robowiki.net/robowiki?Movement/CodeSnippetBasicGoTo
     double a;
-    skynet.setTurnRightRadians(
-        Math.tan(a = Math.atan2(x -= (int) skynet.getX(), y -= (int) skynet.getY()) - skynet.getHeadingRadians()));
-    skynet.setAhead(Math.hypot(x, y) * Math.cos(a));
+    eureka.setTurnRightRadians(
+        Math.tan(a = Math.atan2(x -= (int) eureka.getX(), y -= (int) eureka.getY()) - eureka.getHeadingRadians()));
+    eureka.setAhead(Math.hypot(x, y) * Math.cos(a));
 
-    this.skynet.addCustomEvent(new robocode.MoveCompleteCondition(this.skynet));
+    this.eureka.addCustomEvent(new robocode.MoveCompleteCondition(this.eureka));
 
     this.m_isMoving = true;
   }

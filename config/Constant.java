@@ -1,4 +1,4 @@
-package skynet.config;
+package eureka.config;
 
 import java.io.Serializable;
 import java.lang.Cloneable;
