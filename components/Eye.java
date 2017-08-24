@@ -248,7 +248,10 @@ public class Eye extends Component {
 		} else if (event instanceof Eureka.EnemyDied) {
 			// Save enemy as dead
 			Enemy e = this.getEnemy(((Eureka.EnemyDied) event).getEnemy().getName());
-			e.setDeadTurn((int) this.eureka.getTime());
+			if (e != null) {
+				// If enemy does not die unseen...
+				e.setDeadTurn((int) this.eureka.getTime());
+			}
 		} else if (event instanceof Eureka.RoundEnded) {
 			// Calculate the performance of every enemy after the round ends.
 			final int turns = ((Eureka.RoundEnded) event).getTurns();
