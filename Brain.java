@@ -137,8 +137,14 @@ public class Brain extends Observable implements Observer {
      * @param signal The signal which is to be transmitted.
      */
     private void sendSignal(final Signal signal) {
-        this.m_eureka.out.format("[%s] %s\n", signal instanceof Signal.Command ? "Command" : "Event",
-                signal.getClass().getSimpleName());
+        if (signal instanceof Signal.Command) {
+            this.m_eureka.out.format("[Command] %s\n", signal.getClass().getSimpleName());
+        } else if (signal instanceof Signal.CustomEvent) {
+            this.m_eureka.out.format("[Custom Event] %s\n",
+                    ((Signal.CustomEvent) signal).getCondition().getClass().getSimpleName());
+        } else if (signal instanceof Signal.Event) {
+            this.m_eureka.out.format("[Event] %s\n", signal.getClass().getSimpleName());
+        }
 
         this.setChanged();
         this.notifyObservers(signal);
