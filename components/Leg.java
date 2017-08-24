@@ -153,7 +153,7 @@ public class Leg extends Component {
   public final int MaximalMovement;
 
   private FlightPoint[] m_flightPoints;
-  private FlightPoint m_lastFlightpoint;
+  private Point2D.Double m_lastFlightpoint;
 
   /**
    * Creates a new leg.
@@ -239,25 +239,49 @@ public class Leg extends Component {
     this.sendSignal(new MovementDone());
   }
 
+  @Override
+  protected void handleEvent(Signal.Event event) {
+    if (event instanceof Leg.RobotHit) {
+      this.m_lastFlightpoint = this.eureka.getPosition();
+      this.stop();
+      this.move(-15);
+    } else if (event instanceof Eye.RobotNearby) {
+      Point2D.Double position = ((Eye.RobotNearby) event).getRobot().lastContact();
+      double bearing = HelperFunctions.bearing(this.eureka, position);
+      if (position.distance(this.eureka.getPosition()) < 20 && (bearing > 340 || bearing < 20)) {
+        this.m_lastFlightpoint = position;
+        this.stop();
+        this.move(-15);
+      }
+    }
+  }
+
   /**
    * Moves to a specific point.
+   * @param target The point to move to. 
    */
-  public void move(FlightPoint target) {
+  protected void move(final FlightPoint target) {
     // Check that the robot does not drive against the wall
     double x = Math.min(Math.max(eureka.getWidth(), target.getX()), eureka.getBattleFieldWidth() - eureka.getWidth());
     double y = Math.min(Math.max(eureka.getHeight(), target.getY()),
         eureka.getBattleFieldHeight() - eureka.getHeight());
 
-    m_lastFlightpoint = target;
+    this.m_lastFlightpoint = target;
 
     // Adapted from http://old.robowiki.net/robowiki?Movement/CodeSnippetBasicGoTo
     double a;
     this.eureka.setTurnRightRadians(
         Math.tan(a = Math.atan2(x -= (int) eureka.getX(), y -= (int) eureka.getY()) - eureka.getHeadingRadians()));
 
-    double distance = Math.hypot(x, y) * Math.cos(a);
-    this.eureka.setAhead(distance);
+    this.move(Math.hypot(x, y) * Math.cos(a));
+  }
 
+  /**
+   * Moves torwards a specific distance.
+   * @param distance The distance.
+   */
+  protected void move(final double distance) {
+    this.eureka.setAhead(distance);
     this.start(new robocode.MoveCompleteCondition(this.eureka));
   }
 }

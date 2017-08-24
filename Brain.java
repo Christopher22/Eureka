@@ -178,7 +178,6 @@ public class Brain extends Observable implements Observer {
             this.m_eureka.execute();
         } else if (arg instanceof Leg.RobotHit) {
             // Fires in direction of a hitting robot
-            this.sendSignal(new Brain.Stop());
             double angle = Utils.normalRelativeAngle(this.m_eureka.getHeadingRadians()
                     - this.m_eureka.getGunHeadingRadians() + ((Leg.RobotHit) arg).getBearing());
             this.sendSignal(new Brain.Fire(angle, 3));
