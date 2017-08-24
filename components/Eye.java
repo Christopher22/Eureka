@@ -200,7 +200,6 @@ public class Eye extends Component {
 	private HashMap<String, Enemy> m_enemies;
 	private Memory<EnemyPerformance> m_performance;
 	private Direction m_direction;
-	private int m_scanMode;
 
 	/**
 	 * Create the eye.
@@ -218,7 +217,7 @@ public class Eye extends Component {
 
 		this.m_enemies = new HashMap<String, Enemy>();
 		this.m_direction = Direction.Left;
-		this.m_scanMode = 360;
+		;
 	}
 
 	@Override
@@ -298,22 +297,8 @@ public class Eye extends Component {
 	 * Scans for other robots.
 	 */
 	protected void scan() {
-		this.turnRight(this.m_scanMode);
-		switch (this.m_scanMode) {
-		case 360: // Turn complete in beginning
-			this.m_scanMode = -45;
-			break;
-		case -45: // Turn one time at front
-			this.m_scanMode = 180;
-			break;
-		case 180: // Turn second time at front
-			this.m_scanMode = -450;
-			break;
-		case -450: // Complete scan, change direction afterwards
-			this.m_scanMode = -45;
-			this.m_direction = this.m_direction.reverse();
-			break;
-		}
+		this.m_direction = this.m_direction.reverse();
+		this.turnRight(this.m_direction.getRotationToRight(360));
 	}
 
 	/**
