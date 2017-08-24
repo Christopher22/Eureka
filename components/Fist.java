@@ -54,15 +54,23 @@ public class Fist extends Component {
 
     /**
      * Aims an enemy.
+     * This code is heavily based on the article from http://www.richardsenior.net/code/robocode.html.
      */
     private boolean aim(final Enemy target) {
+        // Finds the point in time where the bullet velocity "matches" the predicted position of the enemy
         long ct = secant(time(target.lastContact().getDistance(), this.PowerConstant), target, this.PowerConstant);
+
+        // Predict the position
         Point2D.Double p = target.predictPosition(ct);
-        double calculatedBearing = HelperFunctions.bearing(this.eureka.getPosition(), p)
-                - this.eureka.getHeadingRadians();
+
+        // Calculate the bearing
+        double calculatedBearing = HelperFunctions.bearing(this.eureka, p);
+
+        // Calculate the turn of the gun
         double turnGun = Utils.normalRelativeAngle(
                 this.eureka.getHeadingRadians() - this.eureka.getGunHeadingRadians() + calculatedBearing);
 
+        // Aim and shoot
         return this.aim(turnGun,
                 calculateFirePower(HelperFunctions.range(this.eureka.getPosition(), p), this.PowerConstant));
     }
@@ -83,13 +91,11 @@ public class Fist extends Component {
 
     private long secant(final long time, final Enemy e, final double powerConstant) {
         double t0 = time - (TICK_RANGE / 2);
-        double t1 = time + (TICK_RANGE / 2);
-        double X = t1;
+        double X = time + (TICK_RANGE / 2);
         double lastX = t0;
-        int iterationCount = 0;
         double lastfX = f(Math.round(t0), e, powerConstant);
-        while ((Math.abs(X - lastX) >= ACCURACY) && (iterationCount < ITERATIONS)) {
-            iterationCount++;
+        for (int iterationCount = 0; (Math.abs(X - lastX) >= ACCURACY)
+                && (iterationCount < ITERATIONS); iterationCount++) {
             double fX = f(Math.round(X), e, powerConstant);
             if ((fX - lastfX) == 0.0)
                 break;
