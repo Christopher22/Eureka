@@ -199,8 +199,8 @@ public class Eye extends Component {
 
 	private HashMap<String, Enemy> m_enemies;
 	private Memory<EnemyPerformance> m_performance;
-	private boolean m_isTurningComplete;
 	private Direction m_direction;
+	private int m_scanMode;
 
 	/**
 	 * Create the eye.
@@ -217,8 +217,8 @@ public class Eye extends Component {
 		}
 
 		this.m_enemies = new HashMap<String, Enemy>();
-		this.m_isTurningComplete = true;
 		this.m_direction = Direction.Left;
+		this.m_scanMode = 360;
 	}
 
 	@Override
@@ -274,7 +274,7 @@ public class Eye extends Component {
 			this.scan();
 		} else if (command instanceof Brain.Attack) {
 			Enemy e = ((Brain.Attack) command).getEnemy();
-			this.turnTo(this.eureka.getHeading() - this.eureka.getRadarHeading() + e.lastContact().getBearing());
+			this.turnRight(this.eureka.getHeading() - this.eureka.getRadarHeading() + e.lastContact().getBearing());
 		}
 	}
 
@@ -298,29 +298,21 @@ public class Eye extends Component {
 	 * Scans for other robots.
 	 */
 	protected void scan() {
-		// Turn full at the beginning or random during the battle
-		if (m_isTurningComplete || Utils.getRandom().nextInt(3) == 2) {
-			this.turnTo(360);
-		} else {
-			// Highly modified version from https://www.ibm.com/developerworks/library/j-radar/index.html
-			double maxBearingAbs = 0, maxBearing = 0;
-			int scannedBots = 0;
-			for (Enemy enemy : this.getCurrentEnemies()) {
-				double bearing = Utils.normalRelativeAngle(
-						this.eureka.getHeading() - this.eureka.getRadarHeading() + enemy.lastContact().getBearing());
-				if (Math.abs(bearing) > maxBearingAbs) {
-					maxBearingAbs = Math.abs(bearing);
-					maxBearing = bearing;
-				}
-				scannedBots++;
-			}
-
-			double radarTurn = this.m_direction.getRotationToRight(180);
-			if (scannedBots == this.eureka.getOthers())
-				radarTurn = maxBearing + Math.signum(maxBearing) * 22.5;
-
+		this.turnRight(this.m_scanMode);
+		switch (this.m_scanMode) {
+		case 360: // Turn complete in beginning
+			this.m_scanMode = -45;
+			break;
+		case -45: // Turn one time at front
+			this.m_scanMode = 180;
+			break;
+		case 180: // Turn second time at front
+			this.m_scanMode = -450;
+			break;
+		case -450: // Complete scan, change direction afterwards
+			this.m_scanMode = -45;
 			this.m_direction = this.m_direction.reverse();
-			this.turnTo(radarTurn);
+			break;
 		}
 	}
 
@@ -328,7 +320,7 @@ public class Eye extends Component {
 	 * Turns the radar for a specific number of degrees.
 	 * @param degrees The degrees to turn.
 	 */
-	protected void turnTo(final double degrees) {
+	protected void turnRight(final double degrees) {
 		this.eureka.setTurnRadarRight(degrees);
 		this.start(new robocode.RadarTurnCompleteCondition(this.eureka));
 	}
