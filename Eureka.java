@@ -132,6 +132,11 @@ public class Eureka extends AdvancedRobot {
 		this.m_brain.update(null, new Eureka.EnemyDied(event));
 	}
 
+	@Override
+	public void onSkippedTurn(SkippedTurnEvent event) {
+		this.out.println("[INFO] Turn skipped!");
+	}
+
 	/**
 	 * Returns the eye of the robot.
 	 * @return the eye of the robot.
