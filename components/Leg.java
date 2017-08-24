@@ -13,6 +13,7 @@ import eureka.Brain;
 import eureka.helper.*;
 import eureka.helper.Signal.Command;
 import eureka.helper.Signal.Event;
+import eureka.helper.Signal.CustomEvent;
 import eureka.config.*;
 
 /**
@@ -151,7 +152,6 @@ public class Leg extends Component {
    */
   public final int MaximalMovement;
 
-  private boolean m_isMoving;
   private FlightPoint[] m_flightPoints;
   private FlightPoint m_lastFlightpoint;
 
@@ -161,7 +161,6 @@ public class Leg extends Component {
   public Leg(final Eureka eureka) {
     super(eureka);
 
-    this.m_isMoving = false;
     this.m_flightPoints = new FlightPoint[FLIGHT_POINTS];
 
     // Loads the maximal movement - and check that it is bigger than the minimal movement.
@@ -206,20 +205,15 @@ public class Leg extends Component {
     this.move(min);
   }
 
-  /**
-   * Checks if the player is currently moving.
-   * @return if the player is moving.
-   */
-  public boolean isMoving() {
-    return this.m_isMoving;
-  }
-
+  @Override
   /**
    * Aborts the current movement.
    */
   public void stop() {
-    this.eureka.stop();
-    this.m_isMoving = false;
+    if (this.isBusy()) {
+      this.eureka.stop();
+    }
+    super.stop();
   }
 
   @Override
@@ -235,18 +229,14 @@ public class Leg extends Component {
 
   @Override
   protected void handleCommand(Command command) {
-    if (command instanceof Brain.Move && !this.m_isMoving) {
+    if (command instanceof Brain.Move) {
       this.flight();
     }
   }
 
   @Override
-  protected void handleEvent(Event event) {
-    if (event instanceof Signal.CustomEvent
-        && ((Signal.CustomEvent) event).getCondition() instanceof robocode.MoveCompleteCondition) {
-      this.m_isMoving = false;
-      this.sendSignal(new MovementDone());
-    }
+  protected void handleOperationDone(CustomEvent event) {
+    this.sendSignal(new MovementDone());
   }
 
   /**
@@ -262,12 +252,12 @@ public class Leg extends Component {
 
     // Adapted from http://old.robowiki.net/robowiki?Movement/CodeSnippetBasicGoTo
     double a;
-    eureka.setTurnRightRadians(
+    this.eureka.setTurnRightRadians(
         Math.tan(a = Math.atan2(x -= (int) eureka.getX(), y -= (int) eureka.getY()) - eureka.getHeadingRadians()));
-    eureka.setAhead(Math.hypot(x, y) * Math.cos(a));
 
-    this.eureka.addCustomEvent(new robocode.MoveCompleteCondition(this.eureka));
+    double distance = Math.hypot(x, y) * Math.cos(a);
+    this.eureka.setAhead(distance);
 
-    this.m_isMoving = true;
+    this.start(new robocode.MoveCompleteCondition(this.eureka));
   }
 }

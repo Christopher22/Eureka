@@ -114,7 +114,6 @@ public class Eureka extends AdvancedRobot {
 	@Override
 	public void onCustomEvent(CustomEvent event) {
 		this.m_brain.update(null, new Signal.CustomEvent(event.getCondition()));
-		this.removeCustomEvent(event.getCondition());
 	}
 
 	@Override

@@ -156,12 +156,15 @@ public class Brain extends Observable implements Observer {
             throw new IllegalArgumentException("Signal expected");
         }
 
+        // Transmit the signal towards the other components.
+        this.sendSignal((Signal) arg);
+
         if (((arg instanceof Leg.MovementDone) || (arg instanceof Fist.BulletFired))
-                || (arg instanceof Fist.AimAborted) && !this.m_eureka.getFist().isAiming()) {
+                || (arg instanceof Fist.AimAborted) && !this.m_eureka.getFist().isBusy()) {
             // Move forward after the end of a operation
             this.sendSignal(new Brain.Move());
             this.m_eureka.execute();
-        } else if (arg instanceof Eye.RobotNearby && !this.m_eureka.getFist().isAiming()) {
+        } else if (arg instanceof Eye.RobotNearby && !this.m_eureka.getFist().isBusy()) {
             // Attack a robot nearby.
             this.sendSignal(new Brain.Stop());
             this.sendSignal(new Brain.Attack(((Eye.RobotNearby) arg).getRobot()));
@@ -169,11 +172,11 @@ public class Brain extends Observable implements Observer {
         } else if (arg instanceof Eye.ScanningComplete) {
             // Continuos scanning after end and move if it was the first one at the beginning.
             this.sendSignal(new Brain.Scan());
-            if (!this.m_eureka.getLeg().isMoving()) {
+            if (!this.m_eureka.getLeg().isBusy()) {
                 this.sendSignal(new Brain.Move());
             }
             this.m_eureka.execute();
-        } else if (arg instanceof Leg.RobotHit && !this.m_eureka.getFist().isAiming()) {
+        } else if (arg instanceof Leg.RobotHit && !this.m_eureka.getFist().isBusy()) {
             // Fires in direction of a hitting robot
             this.sendSignal(new Brain.Stop());
             double angle = Utils.normalRelativeAngle(this.m_eureka.getHeadingRadians()
@@ -181,8 +184,5 @@ public class Brain extends Observable implements Observer {
             this.sendSignal(new Brain.Fire(angle, 3));
             this.m_eureka.execute();
         }
-
-        // Transmit the signal towards the other components.
-        this.sendSignal((Signal) arg);
     }
 }

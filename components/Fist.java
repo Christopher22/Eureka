@@ -10,6 +10,7 @@ import eureka.Brain;
 import eureka.helper.*;
 import eureka.helper.Signal.Command;
 import eureka.helper.Signal.Event;
+import eureka.helper.Signal.CustomEvent;
 import eureka.config.*;
 
 /**
@@ -38,7 +39,6 @@ public class Fist extends Component {
     public final static int ITERATIONS = 15;
     public final static double ACCURACY = 0.01d;
 
-    private boolean m_hasTarget;
     private double m_firePower;
 
     /**
@@ -46,7 +46,6 @@ public class Fist extends Component {
      */
     public Fist(final Eureka eureka) {
         super(eureka);
-        this.m_hasTarget = false;
         this.PowerConstant = eureka.getBrain().accessMemory("Fist/PowerConstant", new Range(500, 400, 600, 50));
 
         this.eureka.setAdjustGunForRobotTurn(true);
@@ -73,14 +72,12 @@ public class Fist extends Component {
      */
     private boolean aim(final double gunRotation, final double firePower) {
         if (this.eureka.getGunHeat() != 0 || firePower < robocode.Rules.MIN_BULLET_POWER) {
-            this.m_hasTarget = false;
             return false;
         }
 
-        this.m_hasTarget = true;
         this.m_firePower = firePower;
         this.eureka.setTurnGunRightRadians(gunRotation);
-        this.eureka.addCustomEvent(new robocode.GunTurnCompleteCondition(this.eureka));
+        this.start(new robocode.GunTurnCompleteCondition(this.eureka));
         return true;
     }
 
@@ -130,31 +127,19 @@ public class Fist extends Component {
         return this.eureka.getGunHeading();
     }
 
-    /**
-     * Checks if an enemy is aimed in the moment.
-     * @return true if aiming.
-     */
-    public boolean isAiming() {
-        return this.m_hasTarget;
-    }
-
     @Override
     protected void handleCommand(Command command) {
         if (command instanceof Brain.Attack && !this.aim(((Brain.Attack) command).getEnemy())) {
             this.sendSignal(new AimAborted());
-        } else if (command instanceof Brain.Move && !this.isAiming()) {
+        } else if (command instanceof Brain.Move) {
             this.eureka.setTurnGunRightRadians(
                     Utils.normalRelativeAngle(this.eureka.getHeadingRadians() - this.eureka.getGunHeadingRadians()));
         }
     }
 
-    protected void handleEvent(Event event) {
-        if (event instanceof Signal.CustomEvent
-                && ((Signal.CustomEvent) event).getCondition() instanceof robocode.GunTurnCompleteCondition
-                && this.isAiming()) {
-            this.eureka.fire(this.m_firePower);
-            this.m_hasTarget = false;
-            this.sendSignal(new BulletFired());
-        }
+    @Override
+    protected void handleOperationDone(CustomEvent event) {
+        this.eureka.fire(this.m_firePower);
+        this.sendSignal(new BulletFired());
     }
 }
