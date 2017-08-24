@@ -235,7 +235,7 @@ public class Leg extends Component {
 
   @Override
   protected void handleCommand(Command command) {
-    if (command instanceof Brain.Move) {
+    if (command instanceof Brain.Move && !this.m_isMoving) {
       this.flight();
     }
   }
@@ -245,8 +245,7 @@ public class Leg extends Component {
     if (event instanceof Signal.CustomEvent
         && ((Signal.CustomEvent) event).getCondition() instanceof robocode.MoveCompleteCondition) {
       this.m_isMoving = false;
-      this.setChanged();
-      this.notifyObservers(new MovementDone());
+      this.sendSignal(new MovementDone());
     }
   }
 
