@@ -13,6 +13,7 @@ import robocode.util.Utils;
 import eureka.Eureka;
 import eureka.Brain;
 import eureka.helper.*;
+import eureka.helper.Signal.CustomEvent;
 import eureka.config.*;
 
 /**
@@ -221,6 +222,11 @@ public class Eye extends Component {
 	}
 
 	@Override
+	protected void handleOperationDone(CustomEvent event) {
+		this.sendSignal(new ScanningComplete());
+	}
+
+	@Override
 	protected void handleEvent(final Signal.Event event) {
 		if (event instanceof RobotFound) {
 			robocode.ScannedRobotEvent enemy = ((RobotFound) event).getRobot();
@@ -238,13 +244,6 @@ public class Eye extends Component {
 			if (e.lastContact().getDistance() < this.Threshold) {
 				this.sendSignal(new RobotNearby(e));
 			}
-		} else if (event instanceof Signal.CustomEvent
-				&& ((Signal.CustomEvent) event).getCondition() instanceof robocode.RadarTurnCompleteCondition) {
-			if (this.m_isTurningComplete) {
-				this.m_isTurningComplete = false;
-			}
-			// Send signal, when scanning is finished
-			this.sendSignal(new ScanningComplete());
 		} else if (event instanceof Eureka.EnemyDied) {
 			// Save enemy as dead
 			Enemy e = this.getEnemy(((Eureka.EnemyDied) event).getEnemy().getName());
@@ -331,7 +330,7 @@ public class Eye extends Component {
 	 */
 	protected void turnTo(final double degrees) {
 		this.eureka.setTurnRadarRight(degrees);
-		this.eureka.addCustomEvent(new robocode.RadarTurnCompleteCondition(this.eureka));
+		this.start(new robocode.RadarTurnCompleteCondition(this.eureka));
 	}
 
 	/**
