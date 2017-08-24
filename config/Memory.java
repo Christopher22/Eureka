@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import robocode.RobocodeFileOutputStream;
+
 /**
  * A serizable memory for the storage of data.
  */
@@ -63,7 +65,7 @@ public class Memory<Data extends Serializable> {
      * @param name The file which might be loaded.
      */
     public void save(final File name) throws IOException {
-        try (FileOutputStream fos = new FileOutputStream(name, false);
+        try (RobocodeFileOutputStream fos = new RobocodeFileOutputStream(name);
                 ObjectOutputStream oos = new ObjectOutputStream(fos)) {
             oos.writeObject(this.m_config);
         } catch (IOException ioe) {
