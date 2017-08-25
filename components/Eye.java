@@ -269,11 +269,12 @@ public class Eye extends Component {
 
 	@Override
 	protected void handleCommand(final Signal.Command command) {
-		if (command instanceof Brain.Scan) {
+		if (command instanceof Brain.Scan && !this.isBusy()) {
 			this.scan();
 		} else if (command instanceof Brain.Attack) {
 			Enemy e = ((Brain.Attack) command).getEnemy();
-			this.turnRight(this.eureka.getHeading() - this.eureka.getRadarHeading() + e.lastContact().getBearing());
+			this.turnRight(Utils.normalRelativeAngleDegrees(
+					this.eureka.getHeading() - this.eureka.getRadarHeading() + e.lastContact().getBearing()));
 		}
 	}
 
