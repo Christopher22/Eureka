@@ -4,6 +4,7 @@ import java.awt.geom.Point2D;
 import java.util.Observable;
 import java.awt.Graphics2D;
 import robocode.util.Utils;
+import robocode.Rules;
 
 import eureka.Eureka;
 import eureka.Brain;
@@ -46,7 +47,7 @@ public class Fist extends Component {
      */
     public Fist(final Eureka eureka) {
         super(eureka);
-        this.PowerConstant = eureka.getBrain().accessMemory("Fist/PowerConstant", new Range(500, 400, 600, 50));
+        this.PowerConstant = eureka.getBrain().accessMemory("Fist/PowerConstant", new Range(50, 30, 100, 50));
 
         this.eureka.setAdjustGunForRobotTurn(true);
         this.eureka.setAdjustRadarForGunTurn(true);
@@ -54,25 +55,16 @@ public class Fist extends Component {
 
     /**
      * Aims an enemy.
-     * This code is heavily based on the article from http://www.richardsenior.net/code/robocode.html.
      */
     private boolean aim(final Enemy target) {
-        // Finds the point in time where the bullet velocity "matches" the predicted position of the enemy
-        long ct = secant(time(target.lastContact().getDistance(), this.PowerConstant), target, this.PowerConstant);
+        final double bulletPower = 3;
 
-        // Predict the position
-        Point2D.Double p = target.predictPosition(ct);
+        final double enemyBearingRadians = Math.toRadians(target.lastContact().getBearing());
+        final double headOnBearing = this.eureka.getHeadingRadians() + enemyBearingRadians;
+        final double linearBearing = headOnBearing + Math.asin(target.lastContact().getVelocity()
+                / Rules.getBulletSpeed(bulletPower) * Math.sin(enemyBearingRadians - headOnBearing));
 
-        // Calculate the bearing
-        double calculatedBearing = HelperFunctions.bearing(this.eureka, p);
-
-        // Calculate the turn of the gun
-        double turnGun = Utils.normalRelativeAngle(
-                this.eureka.getHeadingRadians() - this.eureka.getGunHeadingRadians() + calculatedBearing);
-
-        // Aim and shoot
-        return this.aim(turnGun,
-                calculateFirePower(HelperFunctions.range(this.eureka.getPosition(), p), this.PowerConstant));
+        return this.aim(Utils.normalRelativeAngle(linearBearing - this.eureka.getGunHeadingRadians()), bulletPower);
     }
 
     /**
@@ -87,42 +79,6 @@ public class Fist extends Component {
         this.eureka.setTurnGunRightRadians(gunRotation);
         this.start(new robocode.GunTurnCompleteCondition(this.eureka));
         return true;
-    }
-
-    private long secant(final long time, final Enemy e, final double powerConstant) {
-        double t0 = time - (TICK_RANGE / 2);
-        double X = time + (TICK_RANGE / 2);
-        double lastX = t0;
-        double lastfX = f(Math.round(t0), e, powerConstant);
-        for (int iterationCount = 0; (Math.abs(X - lastX) >= ACCURACY)
-                && (iterationCount < ITERATIONS); iterationCount++) {
-            double fX = f(Math.round(X), e, powerConstant);
-            if ((fX - lastfX) == 0.0)
-                break;
-            long nextX = (long) (X - fX * (X - lastX) / (fX - lastfX));
-            lastX = X;
-            X = nextX;
-            lastfX = fX;
-        }
-        return Math.round(X);
-    }
-
-    private static double calculateFirePower(final double distance, final double powerConstant) {
-        return Math.min(powerConstant / distance, robocode.Rules.MAX_BULLET_POWER);
-    }
-
-    private static double calculateBulletVelocity(final double power) {
-        return 20 - robocode.Rules.MAX_BULLET_POWER * power;
-    }
-
-    private static long time(final double distance, final double powerConstant) {
-        return (long) (distance / calculateBulletVelocity(calculateFirePower(distance, powerConstant)));
-    }
-
-    private double f(final long time, final Enemy e, final double powerConstant) {
-        Point2D.Double d = e.predictPosition(time);
-        double r = HelperFunctions.range(this.eureka.getPosition(), d);
-        return r - calculateBulletVelocity(calculateFirePower(r, powerConstant)) * time;
     }
 
     /**
