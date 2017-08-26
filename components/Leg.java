@@ -107,7 +107,7 @@ public class Leg extends Component {
         result += e.getDanger()
             * (1 + Math
                 .abs(Math.cos(HelperFunctions.bearing(ownPos, this) - HelperFunctions.bearing(e.lastContact(), this))))
-            / this.distance(e.lastContact());
+            / this.distance(e.lastContact()) * (1 + leg.getEureka().getEye().getPerformance(e));
       }
 
       return result;

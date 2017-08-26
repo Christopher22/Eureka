@@ -217,7 +217,6 @@ public class Eye extends Component {
 
 		this.m_enemies = new HashMap<String, Enemy>();
 		this.m_direction = Direction.Left;
-		;
 	}
 
 	@Override
@@ -284,6 +283,15 @@ public class Eye extends Component {
 	 */
 	public Enemy getEnemy(final String name) {
 		return this.m_enemies.get(name);
+	}
+
+	/**
+	 * Returns the average performance of an enemy.
+	 * @param enemy The enemy.
+	 * @return The normalized performance between 0 and 1.
+	 */
+	public double getPerformance(final Enemy enemy) {
+		return this.m_performance.getValue(enemy.getBaseName(), new EnemyPerformance()).getAverage();
 	}
 
 	/**
