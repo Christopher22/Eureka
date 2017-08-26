@@ -100,7 +100,9 @@ public class Eye extends Component {
 			if (this.m_nextEnemy != null) {
 				return true;
 			} else {
+				// Search through all enemies ...
 				while (this.m_nextEnemy == null && this.m_enemies.hasNext()) {
+					// ... and find the active ones.
 					Enemy e = this.m_enemies.next();
 					if (e.isAlive() && e.lastContact().getTurn() >= this.m_current - TURN_THRESHOLD) {
 						this.m_nextEnemy = e;
@@ -117,6 +119,7 @@ public class Eye extends Component {
 		 * @thows NoSuchElementException if no element is present.
 		 */
 		public Enemy next() {
+			// If the user have not called "hasNext" before, handle that
 			if (this.m_nextEnemy != null || this.hasNext()) {
 				Enemy tmp = this.m_nextEnemy;
 				this.m_nextEnemy = null;
@@ -209,14 +212,13 @@ public class Eye extends Component {
 		this.eureka.setAdjustRadarForRobotTurn(true);
 
 		this.Threshold = (int) eureka.getBrain().accessMemory("Eye/NearbyThreshold", new Range(200, 100, 300, 10));
+		this.m_enemies = new HashMap<String, Enemy>();
+		this.m_direction = Direction.Left;
 
 		// Tries to load the performance of former seen robots from a file
 		if ((this.m_performance = Memory.load(new File(eureka.getDataDirectory(), Eye.ENEMY_FILENAME))) == null) {
 			m_performance = new Memory<>();
 		}
-
-		this.m_enemies = new HashMap<String, Enemy>();
-		this.m_direction = Direction.Left;
 	}
 
 	@Override
@@ -269,8 +271,10 @@ public class Eye extends Component {
 	@Override
 	protected void handleCommand(final Signal.Command command) {
 		if (command instanceof Brain.Scan && !this.isBusy()) {
+			// Do scan, if not otherwise in use
 			this.scan();
 		} else if (command instanceof Brain.Attack) {
+			// Abort general scanning and focus on enemy on attack
 			Enemy e = ((Brain.Attack) command).getEnemy();
 			this.turnRight(Utils.normalRelativeAngleDegrees(
 					this.eureka.getHeading() - this.eureka.getRadarHeading() + e.lastContact().getBearing()));

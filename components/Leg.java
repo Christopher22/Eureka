@@ -102,12 +102,13 @@ public class Leg extends Component {
       // Mark points nearby on the old position as dangerous
       double result = 0.08 / (leg.m_lastFlightpoint != null ? this.distanceSq(leg.m_lastFlightpoint) : 1);
 
-      // Calculate the danger for enemies around
+      // Calculate the danger for enemies around, inspired by HawkOnFire (http://robowiki.net/wiki/HawkOnFire/Understanding_HawkOnFire)
       for (Enemy e : leg.eureka.getEye().getCurrentEnemies()) {
-        result += e.getDanger()
+        result += e.getDanger() // The current danger of the enemy, ...
             * (1 + Math
-                .abs(Math.cos(HelperFunctions.bearing(ownPos, this) - HelperFunctions.bearing(e.lastContact(), this))))
-            / this.distance(e.lastContact()) * (1 + leg.getEureka().getEye().getPerformance(e));
+                .abs(Math.cos(HelperFunctions.bearing(ownPos, this) - HelperFunctions.bearing(e.lastContact(), this)))) // ... rotation towards the enemy, ...
+            / this.distance(e.lastContact()) // ... its distance, ...
+            * (1 + leg.getEureka().getEye().getPerformance(e)); // ... and its performance in other battles.
       }
 
       return result;
@@ -214,6 +215,7 @@ public class Leg extends Component {
    * Flight to an optimal safe point in range.
    */
   protected void flight() {
+    // Generate random points around
     final double STEP = (2 * Math.PI) / FLIGHT_POINTS;
     for (int i = 0; i < FLIGHT_POINTS; i++) {
       int distance = Utils.getRandom().nextInt(this.MaximalMovement - this.MinimalMovement) + this.MinimalMovement;
@@ -262,10 +264,12 @@ public class Leg extends Component {
   @Override
   protected void handleEvent(Signal.Event event) {
     if (event instanceof Leg.RobotHit) {
+      // Fly if eureka hits a robot ...
       this.m_lastFlightpoint = this.eureka.getPosition();
       this.stop();
       this.move(-15);
     } else if (event instanceof Eye.RobotNearby) {
+      // ... or it nearby one.
       Point2D.Double position = ((Eye.RobotNearby) event).getRobot().lastContact();
       double bearing = HelperFunctions.bearing(this.eureka, position);
       if (position.distance(this.eureka.getPosition()) < 20 && (bearing > 340 || bearing < 20)) {

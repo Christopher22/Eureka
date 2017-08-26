@@ -35,6 +35,7 @@ public class Memory<Data extends Serializable> {
      */
     @SuppressWarnings("unchecked")
     public Memory(final File path) throws IllegalArgumentException {
+        // Guarantee closing of file by using try(closeable)
         try (FileInputStream fis = new FileInputStream(path); ObjectInputStream ois = new ObjectInputStream(fis)) {
             this.m_config = (TreeMap<String, Data>) ois.readObject();
         } catch (Exception e) {
@@ -66,6 +67,7 @@ public class Memory<Data extends Serializable> {
      * @param name The file which might be loaded.
      */
     public void save(final File name) throws IOException {
+        // Guarantee closing of file by using try(closeable)
         try (RobocodeFileOutputStream fos = new RobocodeFileOutputStream(name);
                 ObjectOutputStream oos = new ObjectOutputStream(fos)) {
             oos.writeObject(this.m_config);

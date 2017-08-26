@@ -59,6 +59,7 @@ public class Fist extends Component {
     private boolean aim(final Enemy target) {
         final double bulletPower = 3;
 
+        // Adopted from http://robowiki.net/wiki/Linear_Targeting.
         final double enemyBearingRadians = Math.toRadians(target.lastContact().getBearing());
         final double headOnBearing = this.eureka.getHeadingRadians() + enemyBearingRadians;
         final double linearBearing = headOnBearing + Math.asin(target.lastContact().getVelocity()
@@ -71,10 +72,12 @@ public class Fist extends Component {
      * Aims towards a position and prepare firing.
      */
     private boolean aim(final double gunRotation, final double firePower) {
+        // Check for valid gun heat and fire power
         if (this.eureka.getGunHeat() != 0 || firePower < robocode.Rules.MIN_BULLET_POWER) {
             return false;
         }
 
+        // Start turning the gun asynchroniously
         this.m_firePower = firePower;
         this.eureka.setTurnGunRightRadians(gunRotation);
         this.start(new robocode.GunTurnCompleteCondition(this.eureka));
@@ -92,8 +95,10 @@ public class Fist extends Component {
     @Override
     protected void handleCommand(Command command) {
         if (command instanceof Brain.Attack && !this.aim(((Brain.Attack) command).getEnemy())) {
+            // Send aiming failure, i.e. caused through gun heat
             this.sendSignal(new AimAborted());
         } else if (command instanceof Brain.Move) {
+            // Set the gun into the direction of the moving tank
             this.eureka.setTurnGunRightRadians(
                     Utils.normalRelativeAngle(this.eureka.getHeadingRadians() - this.eureka.getGunHeadingRadians()));
         }
@@ -101,6 +106,7 @@ public class Fist extends Component {
 
     @Override
     protected void handleOperationDone(CustomEvent event) {
+        // Fire, if the gun is finally rotated
         this.eureka.fire(this.m_firePower);
         this.sendSignal(new BulletFired());
     }

@@ -25,6 +25,7 @@ public abstract class Component extends Observable implements Observer {
     this.eureka = eureka;
     this.m_currentStatus = null;
 
+    // Add as part of the signal network
     eureka.getBrain().addObserver(this);
     this.addObserver(eureka.getBrain());
   }
@@ -34,7 +35,9 @@ public abstract class Component extends Observable implements Observer {
    * @param condition The condition which determines the end of a asynchronous operation.
    */
   protected void start(robocode.Condition condition) {
+    // Abort if currently running
     this.stop();
+
     this.m_currentStatus = condition;
     this.eureka.addCustomEvent(this.m_currentStatus);
   }
@@ -108,11 +111,14 @@ public abstract class Component extends Observable implements Observer {
   @Override
   public final void update(final Observable o, final Object arg) {
     if (arg instanceof Signal.CustomEvent && ((Signal.CustomEvent) arg).getCondition() == this.m_currentStatus) {
+      // Operation complete, clean up and report component
       this.stop();
       this.handleOperationDone((Signal.CustomEvent) arg);
     } else if (arg instanceof Signal.Event) {
+      // Handle events
       this.handleEvent((Signal.Event) arg);
     } else if (arg instanceof Signal.Command) {
+      // Handle commands
       this.handleCommand((Signal.Command) arg);
     } else {
       throw new IllegalArgumentException("Signal expected");
