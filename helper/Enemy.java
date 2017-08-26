@@ -185,14 +185,30 @@ public class Enemy {
    * @return the predicted position.
    */
   public Point2D.Double predictPosition(final long turn) {
-    final Contact last = this.lastContact();
+    if (this.m_events.size() < 2) {
+      return this.lastContact();
+    }
 
-    final double ax = last.getVelocity() * Math.sin(last.getHeading());
-    final double ay = last.getVelocity() * Math.cos(last.getHeading());
-    final double bx = (last.getX()) - (ax * last.getTurn());
-    final double by = (last.getY()) - (ay * last.getTurn());
-    final long t = last.getTurn() + turn;
+    // This algorithm is highly inspired by IBM (https://www.ibm.com/developerworks/library/j-circular/) 
+    final Contact last = this.lastContact(), secondLast = (Contact) (this.m_events.toArray()[1]);
+    final double headingChanged = last.getHeading() - secondLast.getHeading();
+    final double diff = turn - last.getTurn();
+    final double speed = last.distanceSq(secondLast) / (last.getTurn() - secondLast.getTurn());
 
-    return new Point2D.Double(ax * t + bx, ay * t + by);
+    double newX, newY;
+
+    if (Math.abs(headingChanged) > 0.00001) {
+      // Choose circular targetting...
+      double radius = speed / headingChanged;
+      double tothead = diff * headingChanged;
+      newY = last.getY() + (Math.sin(last.getHeading() + tothead) * radius) - (Math.sin(last.getHeading()) * radius);
+      newX = last.getX() + (Math.cos(last.getHeading()) * radius) - (Math.cos(last.getHeading() + tothead) * radius);
+    } else {
+      // ... or the linear one.
+      newY = last.getY() + Math.cos(last.getHeading()) * speed * diff;
+      newX = last.getX() + Math.sin(last.getHeading()) * speed * diff;
+    }
+
+    return new Point2D.Double(newX, newY);
   }
 }
