@@ -138,6 +138,44 @@ public class Leg extends Component {
   }
 
   /**
+   * An special version of range for the maximum movement parameter, which checks at runtime if the value is bigger than the minimum movement parameter.
+   * Due to serialization, no abstract inner class is possible.
+   */
+  private static class MaximumMovementParameter extends Range {
+    public MaximumMovementParameter() {
+      super(180, 120, 300, 10);
+    }
+
+    @Override
+    public boolean setValue(double value, Memory<Parameter> currentMemory) {
+      if (currentMemory.getValue("Leg/MinMovement", null).getValue() <= value) {
+        return super.setValue(value, currentMemory);
+      } else {
+        return false;
+      }
+    }
+  }
+
+  /**
+  * An special version of range for the minimum movement parameter, which checks at runtime if the value is smaller than the maximum movement parameter.
+  * Due to serialization, no abstract inner class is possible.
+  */
+  private static class MinimumMovementParameter extends Range {
+    public MinimumMovementParameter() {
+      super(80, 60, 200, 10);
+    }
+
+    @Override
+    public boolean setValue(double value, Memory<Parameter> currentMemory) {
+      if (currentMemory.getValue("Leg/MaxMovement", null).getValue() >= value) {
+        return super.setValue(value, currentMemory);
+      } else {
+        return false;
+      }
+    }
+  }
+
+  /**
   * The definition of a suitable distance towards a border.
   */
   public final double BorderDefinition;
@@ -164,28 +202,10 @@ public class Leg extends Component {
     this.m_flightPoints = new FlightPoint[FLIGHT_POINTS];
 
     // Loads the maximal movement - and check that it is bigger than the minimal movement.
-    this.MaximalMovement = (int) eureka.getBrain().accessMemory("Leg/MaxMovement", new Range(180, 120, 300, 10) {
-      @Override
-      public boolean setValue(double value, Memory<Parameter> currentMemory) {
-        if (currentMemory.getValue("Leg/MinMovement", null).getValue() <= value) {
-          return super.setValue(value, currentMemory);
-        } else {
-          return false;
-        }
-      }
-    });
+    this.MaximalMovement = (int) eureka.getBrain().accessMemory("Leg/MaxMovement", new MaximumMovementParameter());
 
     // Loads the minimal movement - and check that it is bigger than the maximal movement.
-    this.MinimalMovement = (int) eureka.getBrain().accessMemory("Leg/MinMovement", new Range(80, 60, 200, 10) {
-      @Override
-      public boolean setValue(double value, Memory<Parameter> currentMemory) {
-        if (currentMemory.getValue("Leg/MaxMovement", null).getValue() >= value) {
-          return super.setValue(value, currentMemory);
-        } else {
-          return false;
-        }
-      }
-    });
+    this.MinimalMovement = (int) eureka.getBrain().accessMemory("Leg/MinMovement", new MinimumMovementParameter());
 
     this.BorderDefinition = eureka.getBrain().accessMemory("Leg/Border", new Range(3, 1, 4, 0.5));
   }

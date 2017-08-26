@@ -5,7 +5,7 @@ import java.util.Observer;
 import java.io.File;
 
 import robocode.util.Utils;
-
+import eureka.Eureka;
 import eureka.components.*;
 import eureka.helper.*;
 import eureka.config.*;
@@ -17,6 +17,11 @@ public class Brain extends Observable implements Observer {
     private final Eureka m_eureka;
     private Memory<Parameter> m_memory;
     private final boolean m_isTraining;
+
+    /**
+     * The name of the file, which is used to serialize the settings memory.
+     */
+    public final static String CONFIG_FILENAME = "config.ser";
 
     /**
      * A commando which should result in a non-specified movement on the battlefield.
@@ -98,11 +103,13 @@ public class Brain extends Observable implements Observer {
     public Brain(final Eureka eureka) {
         this.m_eureka = eureka;
 
-        // Load training memory, if in training.
+        // Load training memory, if possible, or the serialized settings otherwise.
         if ((this.m_memory = Memory.load(new File(eureka.getDataDirectory(), Trainer.TRAINING_FILENAME))) != null) {
             this.m_isTraining = true;
-        } else {
+        } else if ((this.m_memory = Memory.load(new File(eureka.getDataDirectory(), Brain.CONFIG_FILENAME))) == null) {
+            this.m_isTraining = false;
             this.m_memory = new Memory<Parameter>();
+        } else {
             this.m_isTraining = false;
         }
     }
@@ -182,6 +189,13 @@ public class Brain extends Observable implements Observer {
                     - this.m_eureka.getGunHeadingRadians() + ((Leg.RobotHit) arg).getBearing());
             this.sendSignal(new Brain.Fire(angle, 3));
             this.m_eureka.execute();
+        } else if (arg instanceof Eureka.BattleEnded && !this.isTraining()) {
+            // Save or overwrite the settings, if not in training.
+            try {
+                this.m_memory.save(new File(this.m_eureka.getDataDirectory(), Brain.CONFIG_FILENAME));
+            } catch (Exception ex) {
+                this.m_eureka.out.println("[ERROR] Saving failed");
+            }
         }
     }
 }

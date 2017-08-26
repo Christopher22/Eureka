@@ -38,6 +38,7 @@ public class Memory<Data extends Serializable> {
         try (FileInputStream fis = new FileInputStream(path); ObjectInputStream ois = new ObjectInputStream(fis)) {
             this.m_config = (TreeMap<String, Data>) ois.readObject();
         } catch (Exception e) {
+            System.err.printf("[Error] Unable to load memory '%s' (%s)\n", path.getAbsolutePath(), e.getMessage());
             throw new IllegalArgumentException("Loading failed");
         }
     }
