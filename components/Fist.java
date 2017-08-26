@@ -47,7 +47,7 @@ public class Fist extends Component {
      */
     public Fist(final Eureka eureka) {
         super(eureka);
-        this.PowerConstant = eureka.getBrain().accessMemory("Fist/PowerConstant", new Range(50, 30, 100, 50));
+        this.PowerConstant = eureka.getBrain().accessMemory("Fist/PowerConstant", new Range(3, 1, 3, 0.1));
 
         this.eureka.setAdjustGunForRobotTurn(true);
         this.eureka.setAdjustRadarForGunTurn(true);
@@ -57,15 +57,14 @@ public class Fist extends Component {
      * Aims an enemy.
      */
     private boolean aim(final Enemy target) {
-        final double bulletPower = 3;
-
         // Adopted from http://robowiki.net/wiki/Linear_Targeting.
         final double enemyBearingRadians = Math.toRadians(target.lastContact().getBearing());
         final double headOnBearing = this.eureka.getHeadingRadians() + enemyBearingRadians;
         final double linearBearing = headOnBearing + Math.asin(target.lastContact().getVelocity()
-                / Rules.getBulletSpeed(bulletPower) * Math.sin(enemyBearingRadians - headOnBearing));
+                / Rules.getBulletSpeed(this.PowerConstant) * Math.sin(enemyBearingRadians - headOnBearing));
 
-        return this.aim(Utils.normalRelativeAngle(linearBearing - this.eureka.getGunHeadingRadians()), bulletPower);
+        return this.aim(Utils.normalRelativeAngle(linearBearing - this.eureka.getGunHeadingRadians()),
+                this.PowerConstant);
     }
 
     /**
