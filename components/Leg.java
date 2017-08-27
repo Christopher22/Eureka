@@ -144,7 +144,7 @@ public class Leg extends Component {
    */
   private static class MaximumMovementParameter extends Range {
     public MaximumMovementParameter() {
-      super(180, 120, 300, 10);
+      super(180, 120, 300, 60);
     }
 
     @Override
@@ -163,7 +163,7 @@ public class Leg extends Component {
   */
   private static class MinimumMovementParameter extends Range {
     public MinimumMovementParameter() {
-      super(80, 60, 200, 10);
+      super(80, 60, 120, 20);
     }
 
     @Override

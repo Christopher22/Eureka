@@ -211,7 +211,7 @@ public class Eye extends Component {
 		super(eureka);
 		this.eureka.setAdjustRadarForRobotTurn(true);
 
-		this.Threshold = (int) eureka.getBrain().accessMemory("Eye/NearbyThreshold", new Range(200, 100, 300, 10));
+		this.Threshold = (int) eureka.getBrain().accessMemory("Eye/NearbyThreshold", new Range(200, 100, 300, 50));
 		this.m_enemies = new HashMap<String, Enemy>();
 		this.m_direction = Direction.Left;
 

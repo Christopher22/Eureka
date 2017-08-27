@@ -47,7 +47,7 @@ public class Fist extends Component {
      */
     public Fist(final Eureka eureka) {
         super(eureka);
-        this.PowerConstant = eureka.getBrain().accessMemory("Fist/PowerConstant", new Range(3, 1, 3, 0.1));
+        this.PowerConstant = eureka.getBrain().accessMemory("Fist/PowerConstant", new Range(3, 1, 3, 0.5));
 
         this.eureka.setAdjustGunForRobotTurn(true);
         this.eureka.setAdjustRadarForGunTurn(true);
