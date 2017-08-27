@@ -2,6 +2,9 @@
 
 Even if the software "Robocode" seems on the first glance like a programming exercise for new software engineers, the tactical opportunities, complex situations and demanding challenges on a second prove this assumption wrong. Eureka is the attempt to build a highly modular foundation for a "rational" agent which can survive even in demanding circumstances of a melee battle. A key feature in achieving this goal is not only its ability to optimize his heuristics in battles but also tweaking its fundamental parameters between them using supervised and unsupervised machine learning approaches.
 
+## Compilation
+It is crucial to exclude "Trainer.java" from the compilation process of the robot. Even with disabled security settings, Robocode is unable to handle the existence of code "linking" with the RobocodeEngine in the same directory. Is it a bug? Alternatively, it is a feature?
+
 ## Design
 
 Eureka is not intended to be the best melee champion, victorious in every fight. The highly optimized robots nowadays being at the top of competitions seems to be rather excellent with their hard-wired logic. Just borrow their ideas to create a "Frankenbot," copying already proven ideas seems therefore rather dull. This bot should be different. It should have the ability to be flexible and adaptable for future use; suitable to be optimized for a 1-vs-1 exactly just like for melee battles or fight in teams. To achieve this goal of flexibility, two major concepts are used.

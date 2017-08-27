@@ -112,7 +112,7 @@ public class Memory<Data extends Serializable> {
      * Returns the inner list, only accessable for code in this module.
      * @return the map.
      */
-    Map<String, Data> getMap() {
+    public Map<String, Data> getMap() {
         return this.m_config;
     }
 }

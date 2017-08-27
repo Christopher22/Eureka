@@ -24,6 +24,11 @@ public class Brain extends Observable implements Observer {
     public final static String CONFIG_FILENAME = "config.ser";
 
     /**
+     * The name of the file, which contains the current training parameters.
+     */
+    public final static String TRAINING_FILENAME = "training.ser";
+
+    /**
      * A commando which should result in a non-specified movement on the battlefield.
      */
     public static class Move implements Signal.Command {
@@ -104,7 +109,7 @@ public class Brain extends Observable implements Observer {
         this.m_eureka = eureka;
 
         // Load training memory, if possible, or the serialized settings otherwise.
-        if ((this.m_memory = Memory.load(new File(eureka.getDataDirectory(), Trainer.TRAINING_FILENAME))) != null) {
+        if ((this.m_memory = Memory.load(new File(eureka.getDataDirectory(), Brain.TRAINING_FILENAME))) != null) {
             this.m_isTraining = true;
         } else if ((this.m_memory = Memory.load(new File(eureka.getDataDirectory(), Brain.CONFIG_FILENAME))) == null) {
             this.m_isTraining = false;
